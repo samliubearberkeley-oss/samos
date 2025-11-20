@@ -632,7 +632,7 @@ export const IPodApp = ({ globalVolume }) => {
 
             {/* Next Button - Right (0°) */}
             <button 
-              className="absolute text-gray-400 hover:text-gray-600"
+              className="absolute text-gray-400 hover:text-gray-600 flex items-center justify-center"
               style={{
                 left: buttonPositions.next.x,
                 top: buttonPositions.next.y,
@@ -646,7 +646,7 @@ export const IPodApp = ({ globalVolume }) => {
 
             {/* Prev Button - Left (180°) */}
             <button 
-              className="absolute text-gray-400 hover:text-gray-600"
+              className="absolute text-gray-400 hover:text-gray-600 flex items-center justify-center"
               style={{
                 left: buttonPositions.prev.x,
                 top: buttonPositions.prev.y,
