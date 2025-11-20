@@ -1070,8 +1070,12 @@ const ChatApp = () => {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type a message..."
-              className="flex-1 px-4 py-2.5 border border-[#b4b4b4] rounded focus:outline-none focus:ring-2 shadow-sm"
-              style={{ background: 'white', focusRingColor: '#3875d7' }}
+              className="flex-1 px-4 py-2.5 border border-[#b4b4b4] rounded focus:outline-none focus:ring-2 shadow-sm placeholder:text-gray-400"
+              style={{ 
+                background: 'white', 
+                color: '#1f2937',
+                caretColor: '#3875d7'
+              }}
               disabled={isLoading}
             />
             <button
