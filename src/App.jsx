@@ -1886,10 +1886,10 @@ const IPodApp = ({ globalVolume }) => {
   };
 
   return (
-    <div className="h-full w-full flex items-center justify-center font-sans p-2 md:p-0">
+    <div className="h-full w-full flex items-center justify-center font-sans p-2 md:p-0 overflow-hidden">
       {/* --- The iPod Case --- */}
       <div 
-        className="relative w-[280px] h-[448px] md:w-[300px] md:h-[480px] rounded-[30px] shadow-2xl select-none overflow-hidden mx-auto"
+        className="relative w-[280px] h-[448px] md:w-[300px] md:h-[480px] rounded-[30px] shadow-2xl select-none overflow-visible mx-auto flex-shrink-0"
         style={{
           background: 'linear-gradient(180deg, #e3e3e3 0%, #d4d4d4 100%)',
           boxShadow: `
@@ -2058,7 +2058,7 @@ const IPodApp = ({ globalVolume }) => {
         </div>
 
         {/* --- Click Wheel --- */}
-        <div className="absolute bottom-10 md:bottom-12 left-1/2 transform -translate-x-1/2 shrink-0">
+        <div className="absolute left-1/2 transform -translate-x-1/2 shrink-0" style={{ bottom: '2.5rem' }}>
           <div 
             className="w-44 h-44 md:w-48 md:h-48 rounded-full relative active:scale-[0.99] transition-transform shrink-0"
             ref={wheelRef}
@@ -2066,7 +2066,11 @@ const IPodApp = ({ globalVolume }) => {
             onTouchStart={(e) => { e.stopPropagation(); handleWheelStart(e); }}
             style={{
               background: '#f2f2f2',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -2px 5px rgba(0,0,0,0.05)'
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -2px 5px rgba(0,0,0,0.05)',
+              width: '11rem',
+              height: '11rem',
+              minWidth: '11rem',
+              minHeight: '11rem'
             }}
           >
             {/* MENU Button */}
@@ -2187,8 +2191,8 @@ export default function App() {
       <GlobalSVGDefs />
       <MenuBar volume={globalVolume} setVolume={setGlobalVolume} />
 
-      {/* Desktop Icons - Higher z-index to ensure they're clickable */}
-      <div className="absolute top-12 md:top-12 right-4 md:right-6 flex flex-col gap-2 items-end z-[100] pointer-events-auto">
+      {/* Desktop Icons - Lower z-index so windows appear above them */}
+      <div className="absolute top-12 md:top-12 right-4 md:right-6 flex flex-col gap-2 items-end z-[10] pointer-events-auto">
         <div onClick={() => toggleWindow('finder-main', 'finder', 'Macintosh HD')} className="cursor-pointer"><HardDriveIcon /></div>
         <div onClick={() => toggleWindow('ipod', 'ipod', 'iPod', 320, 508)} className="cursor-pointer"><IpodDesktopIcon /></div>
       </div>
