@@ -678,11 +678,19 @@ const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onF
 
   const handleMouseDown = (e) => {
     onFocus(id);
-    // Disable dragging on mobile
-    if (!isMobile) {
-      setIsDragging(true);
-      dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    setIsDragging(true);
+    dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+  };
+
+  const handleTouchStart = (e) => {
+    onFocus(id);
+    // Check if touch target is an interactive element (button, input, etc.)
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag')) {
+      return;
     }
+    setIsDragging(true);
+    const touch = e.touches[0];
+    dragOffset.current = { x: touch.clientX - pos.x, y: touch.clientY - pos.y };
   };
 
   useEffect(() => {
@@ -693,16 +701,25 @@ const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onF
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
-      window.addEventListener('touchmove', handleMouseMove);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
       window.addEventListener('touchend', handleMouseUp);
     }
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchmove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleMouseUp);
     };
   }, [isDragging, pos]);
+
+  // Separate touch move handler
+  const handleTouchMove = (e) => {
+    if (isDragging) {
+      e.preventDefault(); // Prevent scrolling while dragging window
+      const touch = e.touches[0];
+      setPos({ x: touch.clientX - dragOffset.current.x, y: touch.clientY - dragOffset.current.y });
+    }
+  };
 
   const titleBarGradient = `linear-gradient(to bottom, #e6e6e6 0%, #dcdcdc 50%, #c8c8c8 50%, #b4b4b4 100%)`;
   const pinstripe = `repeating-linear-gradient(to right, #f5f5f5, #f5f5f5 2px, #ffffff 2px, #ffffff 4px)`;
@@ -729,9 +746,9 @@ const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onF
       }}
       className={`flex flex-col shadow-2xl overflow-hidden ${isActive ? 'shadow-black/30' : 'shadow-black/10'} ${type === 'ipod' ? 'rounded-2xl' : 'rounded-t-lg rounded-b'}`}
       onMouseDown={() => onFocus(id)}
-      onTouchStart={() => onFocus(id)}
+      onTouchStart={handleTouchStart}
     >
-      <div className={`h-7 md:h-7 flex items-center justify-between px-2 select-none border-b border-gray-400 ${type === 'ipod' ? 'rounded-t-2xl' : ''} ${isMobile ? 'cursor-default' : 'cursor-move'}`} style={{ background: titleBarGradient }} onMouseDown={handleMouseDown} onTouchStart={(e) => { e.preventDefault(); onFocus(id); }}>
+      <div className={`h-7 md:h-7 flex items-center justify-between px-2 select-none border-b border-gray-400 ${type === 'ipod' ? 'rounded-t-2xl' : ''} cursor-move`} style={{ background: titleBarGradient }} onMouseDown={handleMouseDown}>
         <TrafficLights onClose={() => onClose(id)} />
         <span className="text-xs md:text-sm font-semibold text-gray-700 shadow-sm truncate flex-1 px-2">{title}</span>
         <div className="w-12"></div>
@@ -2041,12 +2058,12 @@ const IPodApp = ({ globalVolume }) => {
         </div>
 
         {/* --- Click Wheel --- */}
-        <div className="absolute bottom-10 md:bottom-12 left-1/2 transform -translate-x-1/2">
+        <div className="absolute bottom-10 md:bottom-12 left-1/2 transform -translate-x-1/2 shrink-0">
           <div 
-            className="w-44 h-44 md:w-48 md:h-48 rounded-full relative active:scale-[0.99] transition-transform"
+            className="w-44 h-44 md:w-48 md:h-48 rounded-full relative active:scale-[0.99] transition-transform shrink-0"
             ref={wheelRef}
-            onMouseDown={handleWheelStart}
-            onTouchStart={handleWheelStart}
+            onMouseDown={(e) => { e.stopPropagation(); handleWheelStart(e); }}
+            onTouchStart={(e) => { e.stopPropagation(); handleWheelStart(e); }}
             style={{
               background: '#f2f2f2',
               boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -2px 5px rgba(0,0,0,0.05)'
@@ -2055,7 +2072,8 @@ const IPodApp = ({ globalVolume }) => {
             {/* MENU Button */}
             <button 
               className="absolute top-2 left-1/2 transform -translate-x-1/2 text-[11px] font-bold text-gray-400 tracking-widest hover:text-gray-600"
-              onClick={handleMenuClick}
+              onClick={(e) => { e.stopPropagation(); handleMenuClick(); }}
+              onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               MENU
             </button>
@@ -2063,7 +2081,8 @@ const IPodApp = ({ globalVolume }) => {
             {/* Next Button */}
             <button 
               className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              onClick={handleNext}
+              onClick={(e) => { e.stopPropagation(); handleNext(); }}
+              onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               <FastForward size={14} fill="currentColor" />
             </button>
@@ -2071,7 +2090,8 @@ const IPodApp = ({ globalVolume }) => {
             {/* Prev Button */}
             <button 
               className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              onClick={handlePrev}
+              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+              onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               <Rewind size={14} fill="currentColor" />
             </button>
@@ -2079,7 +2099,8 @@ const IPodApp = ({ globalVolume }) => {
             {/* Play/Pause Button */}
             <button 
               className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-gray-400 hover:text-gray-600 flex gap-[2px]"
-              onClick={handlePlayPause}
+              onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
+              onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               <Play size={10} fill="currentColor" />
               <Pause size={10} fill="currentColor" />
@@ -2087,7 +2108,8 @@ const IPodApp = ({ globalVolume }) => {
 
             {/* Center Button */}
             <button 
-              onClick={handleCenterClick}
+              onClick={(e) => { e.stopPropagation(); handleCenterClick(); }}
+              onTouchEnd={(e) => { e.stopPropagation(); }}
               className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-b from-[#e8e8e8] to-[#dcdcdc] active:bg-[#d0d0d0]"
               style={{
                 boxShadow: 'inset 0 1px 2px rgba(255,255,255,1), inset 0 -1px 2px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)'
@@ -2123,11 +2145,27 @@ export default function App() {
       const newZ = Math.min(maxZ + 1, MAX_WINDOW_Z);
       if (existing) {
         if (existing.isOpen) { setActiveWindowId(id); return prev.map(win => win.id === id ? {...win, z: newZ} : win); }
-        const center = getCenteredPos(w, h);
-        return prev.map(win => win.id === id ? { ...win, isOpen: true, x: center.x, y: center.y, z: newZ } : win);
+        // Recalculate center if re-opening
+        const isSmallScreen = window.innerWidth <= 768;
+        const baseCenter = getCenteredPos(w, h);
+        // Add offset for mobile if there are other open windows to avoid exact overlap
+        const openWindowsCount = prev.filter(win => win.isOpen).length;
+        const offset = isSmallScreen ? (openWindowsCount * 20) : 0;
+        
+        const finalX = baseCenter.x + offset;
+        const finalY = baseCenter.y + offset;
+        
+        return prev.map(win => win.id === id ? { ...win, isOpen: true, x: finalX, y: finalY, z: newZ } : win);
       }
-      const center = getCenteredPos(w, h);
-      return [...prev, { id, title, type, isOpen: true, x: center.x, y: center.y, width: w, height: h, z: newZ }];
+      
+      const isSmallScreen = window.innerWidth <= 768;
+      const baseCenter = getCenteredPos(w, h);
+      const openWindowsCount = prev.filter(win => win.isOpen).length;
+      const offset = isSmallScreen ? (openWindowsCount * 20) : 0;
+      const finalX = baseCenter.x + offset;
+      const finalY = baseCenter.y + offset;
+      
+      return [...prev, { id, title, type, isOpen: true, x: finalX, y: finalY, width: w, height: h, z: newZ }];
     });
     setMaxZ(prev => Math.min(prev + 1, MAX_WINDOW_Z));
     setActiveWindowId(id);
