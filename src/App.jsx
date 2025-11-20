@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Minus, Maximize2, ChevronLeft, ChevronRight, Search, Wifi, Battery, Volume2, Command, Check, Settings, Send, Trash2, Plus, LogOut } from 'lucide-react';
+import { X, Minus, Maximize2, ChevronLeft, ChevronRight, Search, Wifi, Battery, Volume2, Command, Check, Settings, Send, Trash2, Plus, LogOut, Play, Pause, FastForward, Rewind, Music } from 'lucide-react';
 import { useAuth, useUser, SignInButton, SignUpButton, SignedIn, SignedOut } from '@insforge/react';
 import { createClient } from '@insforge/sdk';
 import ReactMarkdown from 'react-markdown';
@@ -317,20 +317,156 @@ const IpodDesktopIcon = () => (
 );
 
 // --- 2. System Components ---
-const VolumeControl = () => {
-  const [volume, setVolume] = useState(70);
+const VolumeControl = ({ volume, setVolume }) => {
+  const volumeBarRef = useRef(null);
+  const isDraggingVolumeRef = useRef(false);
+  const animationFrameRef = useRef(null);
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  
+  // Update volume based on mouse/touch position
+  const updateVolume = useCallback((e, immediate = false) => {
+    if (!volumeBarRef.current) return;
+    const rect = volumeBarRef.current.getBoundingClientRect();
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const clickY = clientY - rect.top;
+    // Calculate percentage from bottom (0% = bottom, 100% = top)
+    const percentage = Math.max(0, Math.min(100, 100 - (clickY / rect.height) * 100));
+    
+    const updateUI = () => {
+      setVolume(percentage);
+    };
+    
+    if (immediate || !isDraggingVolumeRef.current) {
+      updateUI();
+    } else {
+      // Use requestAnimationFrame for smooth dragging
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      animationFrameRef.current = requestAnimationFrame(updateUI);
+    }
+  }, [setVolume]);
+  
+  const handleVolumeStart = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingVolumeRef.current = true;
+    setIsDraggingVolume(true);
+    updateVolume(e, true);
+  }, [updateVolume]);
+  
+  // Global mouse/touch event listeners for volume dragging
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDraggingVolumeRef.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+      updateVolume(e, false);
+    };
+    
+    const handleMouseUp = (e) => {
+      if (isDraggingVolumeRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Final update
+        if (volumeBarRef.current) {
+          const rect = volumeBarRef.current.getBoundingClientRect();
+          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+          const clickY = clientY - rect.top;
+          const percentage = Math.max(0, Math.min(100, 100 - (clickY / rect.height) * 100));
+          setVolume(percentage);
+        }
+        
+        isDraggingVolumeRef.current = false;
+        setIsDraggingVolume(false);
+        
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+      }
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove, { passive: false });
+    window.addEventListener('mouseup', handleMouseUp, { passive: false });
+    window.addEventListener('touchmove', handleMouseMove, { passive: false });
+    window.addEventListener('touchend', handleMouseUp, { passive: false });
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleMouseMove);
+      window.removeEventListener('touchend', handleMouseUp);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [updateVolume, setVolume]);
+  
+  const handleVolumeClick = useCallback((e) => {
+    if (!isDraggingVolumeRef.current) {
+      updateVolume(e, true);
+    }
+  }, [updateVolume]);
+  
   return (
-    <div className="absolute top-7 right-10 w-8 h-32 bg-[#f2f2f2] border border-[#b4b4b4] shadow-lg rounded-b-sm flex flex-col items-center justify-between py-2 z-[100]"
+    <div className="absolute top-7 left-1/2 -translate-x-1/2 w-8 h-32 bg-[#f2f2f2] border border-[#b4b4b4] shadow-lg rounded-b-sm flex flex-col items-center justify-between py-2 z-[100]"
          style={{ backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 3px)' }}>
-       <div className="w-1 h-20 bg-gray-300 rounded-full relative shadow-inner">
-          <div className="absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gradient-to-b from-[#7ea7e5] to-[#4a86e8] border border-[#3060a8] shadow-sm" style={{ bottom: `${volume}%` }}></div>
+       <div 
+         ref={volumeBarRef}
+         className="w-1 h-20 bg-gray-300 rounded-full relative shadow-inner cursor-pointer group mx-auto"
+         onMouseDown={handleVolumeStart}
+         onTouchStart={handleVolumeStart}
+         onClick={handleVolumeClick}
+         style={{ 
+           background: 'linear-gradient(to bottom, #e5e7eb 0%, #d1d5db 100%)'
+         }}
+       >
+          {/* Volume fill indicator */}
+          <div 
+            className="absolute bottom-0 left-0 w-full rounded-full"
+            style={{ 
+              height: `${volume}%`,
+              background: 'linear-gradient(to top, #5c94fa 0%, #2668e3 100%)',
+              transition: isDraggingVolume ? 'none' : 'height 0.1s ease-out',
+              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3)'
+            }}
+          ></div>
+          {/* Drag handle - center aligned to fill top */}
+          <div 
+            className={`absolute left-1/2 -translate-x-1/2 rounded-full cursor-grab active:cursor-grabbing transition-all z-10 ${
+              isDraggingVolume ? 'opacity-100 w-3.5 h-3.5 shadow-md' : 'opacity-0 group-hover:opacity-100 w-3 h-3 shadow-sm'
+            }`}
+            style={{ 
+              bottom: `calc(${volume}% - ${isDraggingVolume ? '7px' : '6px'})`,
+              background: 'linear-gradient(to bottom, #5c94fa 0%, #2668e3 100%)',
+              border: '2px solid white',
+              boxShadow: isDraggingVolume 
+                ? '0 2px 4px rgba(0,0,0,0.3), 0 0 0 1px rgba(92,148,250,0.5)' 
+                : '0 1px 2px rgba(0,0,0,0.2)',
+              transition: isDraggingVolume 
+                ? 'opacity 0.1s ease-out, box-shadow 0.1s ease-out' 
+                : 'bottom 0.1s ease-out, opacity 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out, box-shadow 0.2s ease-out'
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              handleVolumeStart(e);
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              handleVolumeStart(e);
+            }}
+          ></div>
        </div>
-       <Settings size={12} className="text-gray-600" />
+       <div className="flex items-center justify-center w-full">
+         <Settings size={12} className="text-gray-600" />
+       </div>
     </div>
   );
 }
 
-const MenuBar = () => {
+const MenuBar = ({ volume, setVolume }) => {
   const [activeMenu, setActiveMenu] = useState(null);
   const [showVolume, setShowVolume] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -409,7 +545,7 @@ const MenuBar = () => {
       <div className="flex items-center gap-4">
         <div className="relative" ref={volRef}>
            <Volume2 size={16} className="text-gray-700 cursor-pointer hover:text-black" onClick={() => setShowVolume(!showVolume)}/>
-           {showVolume && <VolumeControl />}
+           {showVolume && <VolumeControl volume={volume} setVolume={setVolume} />}
         </div>
         <span className="text-xs font-medium text-gray-700">{formatTime(currentTime)}</span>
       </div>
@@ -538,10 +674,10 @@ const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onF
   return (
     <div
       style={{ left: pos.x, top: pos.y, width, height, zIndex, position: 'absolute' }}
-      className={`flex flex-col rounded-t-lg rounded-b shadow-2xl overflow-hidden ${isActive ? 'shadow-black/30' : 'shadow-black/10'}`}
+      className={`flex flex-col shadow-2xl overflow-hidden ${isActive ? 'shadow-black/30' : 'shadow-black/10'} ${type === 'ipod' ? 'rounded-2xl' : 'rounded-t-lg rounded-b'}`}
       onMouseDown={() => onFocus(id)}
     >
-      <div className="h-7 flex items-center justify-between px-2 select-none border-b border-gray-400" style={{ background: titleBarGradient }} onMouseDown={handleMouseDown}>
+      <div className={`h-7 flex items-center justify-between px-2 select-none border-b border-gray-400 ${type === 'ipod' ? 'rounded-t-2xl' : ''}`} style={{ background: titleBarGradient }} onMouseDown={handleMouseDown}>
         <TrafficLights onClose={() => onClose(id)} />
         <span className="text-sm font-semibold text-gray-700 shadow-sm">{title}</span>
         <div className="w-12"></div>
@@ -552,7 +688,7 @@ const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onF
            <div className="flex-1 bg-white border border-gray-300 rounded-sm h-6 flex items-center px-2"><span className="text-xs text-gray-500">/</span></div>
         </div>
       )}
-      <div className="flex-1 relative overflow-y-auto overflow-x-hidden" style={{ background: type === 'ipod' ? '#f2f2f2' : pinstripe }}>
+      <div className={`flex-1 relative ${type === 'ipod' ? 'overflow-hidden rounded-b-2xl' : 'overflow-y-auto overflow-x-hidden'}`} style={{ background: type === 'ipod' ? 'transparent' : pinstripe }}>
         {children}
       </div>
     </div>
@@ -626,7 +762,133 @@ const ChatApp = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleDeleteMessage = (index) => {
+  // Load conversations from database when user signs in
+  useEffect(() => {
+    const loadConversations = async () => {
+      if (!isSignedIn || !user || !isLoaded) return;
+
+      try {
+        const client = createClient({
+          baseUrl: import.meta.env.VITE_INSFORGE_BASE_URL || 'https://nsir3ccz.us-east.insforge.app',
+          anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY || ''
+        });
+
+        // Load conversations
+        const { data: conversationsData, error: convError } = await client.database
+          .from('conversations')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(100);
+
+        if (convError) {
+          console.error('Error loading conversations:', convError);
+          return;
+        }
+
+        if (conversationsData && conversationsData.length > 0) {
+          // Load messages for each conversation
+          const conversationsWithMessages = await Promise.all(
+            conversationsData.map(async (conv) => {
+              const { data: messagesData, error: msgError } = await client.database
+                .from('messages')
+                .select('*')
+                .eq('conversation_id', conv.id)
+                .order('created_at', { ascending: true })
+                .limit(1000);
+
+              if (msgError) {
+                console.error('Error loading messages:', msgError);
+                return {
+                  id: conv.id,
+                  title: conv.title,
+                  messages: [{ role: 'assistant', content: '👋 Hello! I\'m ChatGPT. How can I help you today?' }]
+                };
+              }
+
+              return {
+                id: conv.id,
+                title: conv.title,
+                messages: messagesData && messagesData.length > 0
+                  ? messagesData.map(msg => ({ role: msg.role, content: msg.content }))
+                  : [{ role: 'assistant', content: '👋 Hello! I\'m ChatGPT. How can I help you today?' }]
+              };
+            })
+          );
+
+          setConversations(conversationsWithMessages);
+          if (conversationsWithMessages.length > 0) {
+            setCurrentConversationId(conversationsWithMessages[0].id);
+          } else {
+            // Create default conversation if none exist
+            const defaultId = Date.now().toString();
+            const defaultConversation = {
+              id: defaultId,
+              title: 'New Chat',
+              messages: [{ role: 'assistant', content: '👋 Hello! I\'m ChatGPT. How can I help you today?' }]
+            };
+            setConversations([defaultConversation]);
+            setCurrentConversationId(defaultId);
+          }
+        } else {
+          // Create default conversation if none exist
+          const defaultId = Date.now().toString();
+          const defaultConversation = {
+            id: defaultId,
+            title: 'New Chat',
+            messages: [{ role: 'assistant', content: '👋 Hello! I\'m ChatGPT. How can I help you today?' }]
+          };
+          setConversations([defaultConversation]);
+          setCurrentConversationId(defaultId);
+        }
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+        // Create default conversation on error
+        const defaultId = Date.now().toString();
+        const defaultConversation = {
+          id: defaultId,
+          title: 'New Chat',
+          messages: [{ role: 'assistant', content: '👋 Hello! I\'m ChatGPT. How can I help you today?' }]
+        };
+        setConversations([defaultConversation]);
+        setCurrentConversationId(defaultId);
+      }
+    };
+
+    loadConversations();
+  }, [isSignedIn, user, isLoaded]);
+
+  const handleDeleteMessage = async (index) => {
+    if (!isSignedIn || !user) return;
+
+    const messageToDelete = messages[index];
+    if (!messageToDelete) return;
+
+    // Delete from database
+    try {
+      const client = createClient({
+        baseUrl: import.meta.env.VITE_INSFORGE_BASE_URL || 'https://nsir3ccz.us-east.insforge.app',
+        anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY || ''
+      });
+
+      // Find and delete the message from database
+      const { data: messagesData } = await client.database
+        .from('messages')
+        .select('id, role, content, created_at')
+        .eq('conversation_id', currentConversationId)
+        .order('created_at', { ascending: true });
+
+      if (messagesData && messagesData[index]) {
+        await client.database
+          .from('messages')
+          .delete()
+          .eq('id', messagesData[index].id);
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+
+    // Update local state
     setConversations(prev => prev.map(conv => 
       conv.id === currentConversationId 
         ? { ...conv, messages: conv.messages.filter((_, i) => i !== index) }
@@ -644,7 +906,9 @@ const ChatApp = () => {
     }
   };
 
-  const handleNewConversation = () => {
+  const handleNewConversation = async () => {
+    if (!isSignedIn || !user) return;
+    
     const newId = Date.now().toString();
     const newConversation = {
       id: newId,
@@ -653,15 +917,53 @@ const ChatApp = () => {
     };
     setConversations(prev => [newConversation, ...prev]);
     setCurrentConversationId(newId);
+
+    // Save conversation to database
+    try {
+      const client = createClient({
+        baseUrl: import.meta.env.VITE_INSFORGE_BASE_URL || 'https://nsir3ccz.us-east.insforge.app',
+        anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY || ''
+      });
+
+      await client.database.from('conversations').insert([{
+        id: newId,
+        user_id: user.id,
+        title: 'New Chat'
+      }]);
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
   };
 
-  const handleDeleteConversation = (conversationId, e) => {
+  const handleDeleteConversation = async (conversationId, e) => {
     e.stopPropagation();
     if (conversations.length === 1) {
       alert('Cannot delete the last conversation');
       return;
     }
     if (window.confirm('Are you sure you want to delete this conversation?')) {
+      // Delete from database
+      try {
+        const client = createClient({
+          baseUrl: import.meta.env.VITE_INSFORGE_BASE_URL || 'https://nsir3ccz.us-east.insforge.app',
+          anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY || ''
+        });
+
+        // Delete messages first (CASCADE should handle this, but explicit delete is safer)
+        await client.database
+          .from('messages')
+          .delete()
+          .eq('conversation_id', conversationId);
+
+        // Delete conversation
+        await client.database
+          .from('conversations')
+          .delete()
+          .eq('id', conversationId);
+      } catch (error) {
+        console.error('Error deleting conversation:', error);
+      }
+
       setConversations(prev => prev.filter(c => c.id !== conversationId));
       if (conversationId === currentConversationId) {
         const remaining = conversations.filter(c => c.id !== conversationId);
@@ -702,7 +1004,7 @@ const ChatApp = () => {
   };
 
   const handleSend = async () => {
-    if (!inputMessage.trim() || isLoading || !isSignedIn) return;
+    if (!inputMessage.trim() || isLoading || !isSignedIn || !user) return;
 
     const currentMessage = inputMessage.trim();
     const userMessage = { role: 'user', content: currentMessage };
@@ -723,11 +1025,42 @@ const ChatApp = () => {
     setInputMessage('');
     setIsLoading(true);
 
+    const client = createClient({
+      baseUrl: import.meta.env.VITE_INSFORGE_BASE_URL || 'https://nsir3ccz.us-east.insforge.app',
+      anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY || ''
+    });
+
     try {
-      const client = createClient({
-        baseUrl: import.meta.env.VITE_INSFORGE_BASE_URL || 'https://nsir3ccz.us-east.insforge.app',
-        anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY || ''
-      });
+      // Save user message to database
+      const userMessageId = `${Date.now()}-user`;
+      await client.database.from('messages').insert([{
+        id: userMessageId,
+        conversation_id: currentConversationId,
+        role: 'user',
+        content: currentMessage
+      }]);
+
+      // Ensure conversation exists in database
+      const { data: existingConv } = await client.database
+        .from('conversations')
+        .select('id')
+        .eq('id', currentConversationId)
+        .single();
+      
+      if (!existingConv) {
+        await client.database.from('conversations').insert([{
+          id: currentConversationId,
+          user_id: user.id,
+          title: messages.length === 1 ? (currentMessage.length > 30 ? currentMessage.substring(0, 30) + '...' : currentMessage) : 'New Chat'
+        }]);
+      } else if (messages.length === 1) {
+        // Update conversation title
+        const title = currentMessage.length > 30 ? currentMessage.substring(0, 30) + '...' : currentMessage;
+        await client.database
+          .from('conversations')
+          .update({ title, updated_at: new Date().toISOString() })
+          .eq('id', currentConversationId);
+      }
 
       const completion = await client.ai.chat.completions.create({
         model: 'openai/gpt-4o',
@@ -744,12 +1077,27 @@ const ChatApp = () => {
         content: completion.choices[0]?.message?.content || 'Sorry, I couldn\'t generate a response.'
       };
       
+      // Save assistant message to database
+      const assistantMessageId = `${Date.now()}-assistant`;
+      await client.database.from('messages').insert([{
+        id: assistantMessageId,
+        conversation_id: currentConversationId,
+        role: 'assistant',
+        content: assistantMessage.content
+      }]);
+
       // Update conversation with assistant message
       setConversations(prev => prev.map(conv => 
         conv.id === currentConversationId 
           ? { ...conv, messages: [...conv.messages, assistantMessage] }
           : conv
       ));
+
+      // Update conversation updated_at
+      await client.database
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', currentConversationId);
     } catch (error) {
       console.error('AI Error:', error);
       setConversations(prev => prev.map(conv => 
@@ -1093,30 +1441,621 @@ const ChatApp = () => {
   );
 };
 
-const IPodApp = () => (
-  <div className="h-full flex items-center justify-center bg-[#d1d5db]">
-     <div className="w-[240px] h-[380px] bg-gradient-to-b from-gray-100 to-gray-300 rounded-[20px] shadow-xl border border-gray-400 p-4 flex flex-col relative">
-        <div className="h-32 bg-[#ccdfc1] rounded border-2 border-gray-400 shadow-inner p-2 font-mono text-xs flex flex-col relative overflow-hidden">
-             <div className="flex-1 flex flex-col items-center justify-center text-[#3d4839]">
-               <div className="font-bold text-sm">Tiramisu</div>
-               <div className="text-xs">Don Toliver</div>
+// --- iPod Assets & Data ---
+const SONGS = [
+  { title: 'LUV SIC', artist: 'Nujabes', album: 'Modal Soul', duration: 274, coverColor: 'bg-purple-800', audioSrc: '/audio/NUJABES_-_LUV_SIC.mp3' },
+  { title: 'Tiramisu', artist: 'Don Toliver', album: 'Life of a Don', duration: 180, coverColor: 'bg-emerald-700', audioSrc: null },
+  { title: 'Less Than Zero', artist: 'The Weeknd', album: 'Dawn FM', duration: 213, coverColor: 'bg-blue-800', audioSrc: null },
+  { title: 'Instant Crush', artist: 'Daft Punk', album: 'RAM', duration: 337, coverColor: 'bg-slate-800', audioSrc: null },
+  { title: 'Nights', artist: 'Frank Ocean', album: 'Blonde', duration: 307, coverColor: 'bg-black', audioSrc: null },
+];
+
+const IPOD_MENU_ITEMS = [
+  { id: 'music', label: 'Music', hasSub: true },
+  { id: 'extras', label: 'Extras', hasSub: true },
+  { id: 'settings', label: 'Settings', hasSub: true },
+  { id: 'shuffle', label: 'Shuffle Songs', hasSub: false },
+  { id: 'nowplaying', label: 'Now Playing', hasSub: false },
+];
+
+// --- iPod Classic Component ---
+const IPodApp = ({ globalVolume }) => {
+  const [view, setView] = useState('nowplaying'); // 'menu', 'nowplaying'
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentSongIdx, setCurrentSongIdx] = useState(0);
+  const [progress, setProgress] = useState(0); // % progress
+  const [volume, setVolume] = useState(60); // % volume (local for iPod wheel control display)
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentPlayTime, setCurrentPlayTime] = useState(0); // current playback time in seconds
+  const [isDraggingProgress, setIsDraggingProgress] = useState(false); // for UI feedback
+  
+  // Audio ref
+  const audioRef = useRef(null);
+  
+  // Wheel Logic Refs
+  const wheelRef = useRef(null);
+  const angleRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  
+  // Progress bar drag refs
+  const progressBarRef = useRef(null);
+  const isDraggingProgressRef = useRef(false);
+  const animationFrameRef = useRef(null);
+  const dragProgressRef = useRef(0); // Store progress during drag for smooth updates
+  
+  // Handle progress bar click/drag - optimized for smooth dragging
+  const updateProgress = useCallback((e, immediate = false) => {
+    if (!progressBarRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clickX = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+    
+    dragProgressRef.current = percentage;
+    
+    const currentSong = SONGS[currentSongIdx];
+    
+    // Use requestAnimationFrame for smooth updates during drag
+    const updateUI = () => {
+      if (audioRef.current && currentSong.audioSrc) {
+        const duration = audioRef.current.duration || currentSong.duration;
+        const newTime = (percentage / 100) * duration;
+        // Only update audio time when dragging ends or immediately on click
+        if (immediate || !isDraggingProgressRef.current) {
+          audioRef.current.currentTime = newTime;
+        }
+        setCurrentPlayTime(newTime);
+        setProgress(percentage);
+      } else if (currentSong.duration) {
+        const newTime = (percentage / 100) * currentSong.duration;
+        setCurrentPlayTime(newTime);
+        setProgress(percentage);
+      }
+    };
+    
+    if (immediate || !isDraggingProgressRef.current) {
+      updateUI();
+    } else {
+      // Use requestAnimationFrame for smooth dragging
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      animationFrameRef.current = requestAnimationFrame(updateUI);
+    }
+  }, [currentSongIdx]);
+  
+  const handleProgressBarStart = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingProgressRef.current = true;
+    setIsDraggingProgress(true);
+    updateProgress(e, true); // Immediate update on start
+  }, [updateProgress]);
+  
+  // Add global mouse/touch event listeners for progress bar dragging - optimized
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDraggingProgressRef.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+      updateProgress(e, false); // Smooth update during drag
+    };
+    
+    const handleMouseUp = (e) => {
+      if (isDraggingProgressRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Final update with immediate audio seek
+        if (progressBarRef.current) {
+          const rect = progressBarRef.current.getBoundingClientRect();
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const clickX = clientX - rect.left;
+          const percentage = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+          
+          const currentSong = SONGS[currentSongIdx];
+          if (audioRef.current && currentSong.audioSrc) {
+            const duration = audioRef.current.duration || currentSong.duration;
+            const newTime = (percentage / 100) * duration;
+            audioRef.current.currentTime = newTime;
+            setCurrentPlayTime(newTime);
+            setProgress(percentage);
+          }
+        }
+        
+        isDraggingProgressRef.current = false;
+        setIsDraggingProgress(false);
+        
+        // Cancel any pending animation frame
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+      }
+    };
+    
+    // Always add listeners, they check the ref internally
+    window.addEventListener('mousemove', handleMouseMove, { passive: false });
+    window.addEventListener('mouseup', handleMouseUp, { passive: false });
+    window.addEventListener('touchmove', handleMouseMove, { passive: false });
+    window.addEventListener('touchend', handleMouseUp, { passive: false });
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleMouseMove);
+      window.removeEventListener('touchend', handleMouseUp);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [updateProgress, currentSongIdx]);
+  
+  // Handle click on progress bar (when not dragging)
+  const handleProgressBarClick = useCallback((e) => {
+    if (!isDraggingProgressRef.current) {
+      updateProgress(e, true); // Immediate update on click
+    }
+  }, [updateProgress]);
+
+  // Initialize and manage audio element when song changes
+  useEffect(() => {
+    const currentSong = SONGS[currentSongIdx];
+    
+    // Clean up previous audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    
+    // Initialize new audio if song has audio source
+    if (currentSong.audioSrc) {
+      audioRef.current = new Audio(currentSong.audioSrc);
+      audioRef.current.volume = (globalVolume || volume) / 100;
+      
+      const timeUpdateHandler = () => {
+        if (audioRef.current) {
+          const current = audioRef.current.currentTime;
+          const duration = audioRef.current.duration || currentSong.duration;
+          setCurrentPlayTime(current);
+          setProgress((current / duration) * 100);
+        }
+      };
+      
+      const endedHandler = () => {
+        // Auto play next song
+        setCurrentSongIdx((prev) => (prev + 1) % SONGS.length);
+        setProgress(0);
+        setCurrentPlayTime(0);
+      };
+      
+      audioRef.current.addEventListener('timeupdate', timeUpdateHandler);
+      audioRef.current.addEventListener('ended', endedHandler);
+      
+      // Load the audio
+      audioRef.current.load();
+      setCurrentPlayTime(0);
+      setProgress(0);
+    } else {
+      // No audio file, reset progress
+      setCurrentPlayTime(0);
+      setProgress(0);
+    }
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [currentSongIdx]);
+  
+  // Handle play/pause
+  useEffect(() => {
+    if (audioRef.current && SONGS[currentSongIdx].audioSrc) {
+      if (isPlaying) {
+        audioRef.current.play().catch(err => {
+          console.error('Playback failed:', err);
+          setIsPlaying(false);
+        });
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying, currentSongIdx]);
+  
+  // Update volume - use global volume if available, otherwise use local volume
+  useEffect(() => {
+    if (audioRef.current) {
+      const effectiveVolume = globalVolume !== undefined ? globalVolume : volume;
+      audioRef.current.volume = effectiveVolume / 100;
+    }
+  }, [volume, globalVolume]);
+  
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format time for display
+  const formatDisplayTime = (date) => {
+    let hours = date.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
+  // --- Click Wheel Logic ---
+  const handleWheelStart = (e) => {
+    isDraggingRef.current = true;
+    updateAngle(e);
+  };
+
+  const handleWheelMove = (e) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault(); // Prevent page scroll on mobile
+    
+    const prevAngle = angleRef.current;
+    updateAngle(e);
+    const newAngle = angleRef.current;
+    
+    let delta = newAngle - prevAngle;
+    // Handle wrap-around (0 to 360)
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    // Sensitivity threshold
+    if (Math.abs(delta) > 15) {
+      const direction = delta > 0 ? 1 : -1; // 1 = clockwise (down/vol up), -1 = counter (up/vol down)
+      handleScroll(direction);
+    }
+  };
+
+  const handleWheelEnd = () => {
+    isDraggingRef.current = false;
+  };
+
+  const updateAngle = (e) => {
+    if (!wheelRef.current) return;
+    const rect = wheelRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Support both mouse and touch
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = clientX - centerX;
+    const y = clientY - centerY;
+    
+    const rad = Math.atan2(y, x);
+    let deg = rad * (180 / Math.PI);
+    if (deg < 0) deg += 360;
+    
+    angleRef.current = deg;
+  };
+
+  const handleScroll = (direction) => {
+    if (view === 'menu') {
+      setSelectedIndex((prev) => {
+        const next = prev + direction;
+        if (next < 0) return IPOD_MENU_ITEMS.length - 1;
+        if (next >= IPOD_MENU_ITEMS.length) return 0;
+        return next;
+      });
+    } else if (view === 'nowplaying') {
+      setVolume((prev) => {
+        const next = prev + (direction * 2); // 2% increments
+        return Math.min(100, Math.max(0, next));
+      });
+    }
+  };
+
+  // --- Button Handlers ---
+  const handleMenuClick = () => {
+    setView((prev) => (prev === 'nowplaying' ? 'menu' : 'menu')); // Simplified nav
+  };
+
+  const handleCenterClick = () => {
+    if (view === 'menu') {
+      const item = IPOD_MENU_ITEMS[selectedIndex];
+      if (item.id === 'nowplaying') {
+        setView('nowplaying');
+      } else {
+        // Simulate entering a submenu (just flash for demo)
+      }
+    } else {
+      // In Now Playing, toggle play (or maybe toggle display mode in real ipod, but play is intuitive)
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleNext = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setCurrentSongIdx((prev) => (prev + 1) % SONGS.length);
+    setProgress(0);
+    setCurrentPlayTime(0);
+    setIsPlaying(true);
+  };
+
+  const handlePrev = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setCurrentSongIdx((prev) => (prev - 1 + SONGS.length) % SONGS.length);
+    setProgress(0);
+    setCurrentPlayTime(0);
+    setIsPlaying(true);
+  };
+
+  // --- Effects ---
+  useEffect(() => {
+    if (isDraggingRef.current) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, []);
+
+  const currentSong = SONGS[currentSongIdx];
+
+  // Helper: Format Time
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  return (
+    <div className="h-full w-full flex items-center justify-center font-sans">
+      {/* --- The iPod Case --- */}
+      <div 
+        className="relative w-[300px] h-[480px] rounded-[30px] shadow-2xl select-none overflow-hidden mx-auto"
+        style={{
+          background: 'linear-gradient(180deg, #e3e3e3 0%, #d4d4d4 100%)',
+          boxShadow: `
+            inset 0 2px 4px rgba(255,255,255,0.9),
+            inset 0 -2px 6px rgba(0,0,0,0.2),
+            0 20px 40px rgba(0,0,0,0.6)
+          `
+        }}
+        onMouseMove={handleWheelMove}
+        onMouseUp={handleWheelEnd}
+        onTouchMove={handleWheelMove}
+        onTouchEnd={handleWheelEnd}
+      >
+        {/* --- Glossy Highlight on Case --- */}
+        <div className="absolute top-0 left-0 w-full h-full rounded-[30px] pointer-events-none opacity-30"
+             style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 40%)' }}></div>
+        
+        {/* --- Screen Area --- */}
+        <div className="relative mx-auto mt-8 w-[250px] h-[190px] bg-black rounded-lg overflow-hidden border-4 border-[#444] shadow-inner">
+          {/* Actual LCD Content */}
+          <div className="w-full h-full bg-white relative overflow-visible">
+            {/* Top Bar (Global) */}
+            <div className="h-6 bg-gradient-to-b from-gray-100 to-gray-300 flex items-center justify-between px-2 border-b border-gray-400 z-10 relative">
+              <div className="text-[10px] font-bold text-gray-700 flex items-center gap-1">
+                {isPlaying ? <Play size={8} fill="currentColor" /> : <Pause size={8} fill="currentColor" />}
+              </div>
+              <div className="text-[10px] font-bold text-gray-700">{formatDisplayTime(currentTime)}</div>
+              <div className="text-gray-700">
+                 <div className="w-5 h-2 border border-gray-600 rounded-[1px] p-[1px] flex">
+                    <div className="w-2/3 h-full bg-green-600"></div>
+                 </div>
+              </div>
             </div>
+
+            {/* Views */}
+            {view === 'menu' ? (
+              <div className="flex h-full">
+                {/* Left Side Menu */}
+                <div className="flex-1 bg-white text-black pt-1">
+                  <div className="px-2 py-1 text-sm font-bold text-center border-b border-gray-300 mb-1 shadow-sm">
+                    iPod
+                  </div>
+                  <ul>
+                    {IPOD_MENU_ITEMS.map((item, idx) => (
+                      <li 
+                        key={item.id}
+                        className={`px-3 py-1 text-xs font-semibold flex justify-between items-center ${selectedIndex === idx ? 'bg-gradient-to-b from-[#5c94fa] to-[#2668e3] text-white' : 'text-black'}`}
+                      >
+                        <span>{item.label}</span>
+                        {item.hasSub && <ChevronRight size={10} />}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Right Side Split (Visual only) */}
+                <div className="w-1/2 bg-gray-100 flex items-center justify-center relative overflow-hidden">
+                   {/* Ken Burns effect placeholder */}
+                   <div className="absolute inset-0 opacity-80" style={{background: 'radial-gradient(circle, #ccc 0%, #fff 100%)'}}></div>
+                   <Music size={48} className="text-gray-300 opacity-50" />
+                </div>
+              </div>
+            ) : (
+              // Now Playing View - Screen: 250x190 → Content: 250x(190-24)=166px after top bar
+              <div className="flex flex-col bg-white" style={{ height: 'calc(100% - 24px)' }}>
+                {/* Main Info Area - Compact to leave room for progress */}
+                <div className="flex p-2 gap-2 items-center" style={{ height: '100px' }}>
+                   {/* Album Art */}
+                   <div className={`w-20 h-20 shadow-lg ${currentSong.coverColor} flex items-center justify-center text-white/20 flex-shrink-0`}>
+                      <Music size={32} />
+                   </div>
+                   {/* Song Info */}
+                   <div className="flex-1 flex flex-col justify-center min-w-0">
+                      <h2 className="font-bold text-sm truncate text-black leading-tight mb-0.5">{currentSong.title}</h2>
+                      <p className="text-[11px] text-gray-600 truncate font-medium">{currentSong.artist}</p>
+                      <p className="text-[9px] text-gray-400 truncate mt-0.5">{currentSong.album}</p>
+                   </div>
+                </div>
+
+                {/* Progress Area - Always visible at bottom */}
+                <div className="px-3 pb-2.5 pt-1.5" style={{ 
+                  height: '38px',
+                  backgroundColor: '#ffffff',
+                  borderTop: '1px solid #d1d5db'
+                }}>
+                   {/* Time Display */}
+                   <div className="flex justify-between text-[9px] font-bold text-gray-600 mb-1.5 font-mono">
+                      <span>{formatTime(currentPlayTime)}</span>
+                      <span>-{formatTime(Math.max(0, currentSong.duration - currentPlayTime))}</span>
+                   </div>
+                   {/* Progress Bar - iPod Classic Style */}
+                   <div 
+                     ref={progressBarRef}
+                     className="h-2 relative cursor-pointer group rounded-full"
+                     onMouseDown={handleProgressBarStart}
+                     onTouchStart={handleProgressBarStart}
+                     onClick={handleProgressBarClick}
+                     onMouseEnter={() => {
+                       if (!isDraggingProgressRef.current) {
+                         setIsDraggingProgress(true);
+                       }
+                     }}
+                     onMouseLeave={() => {
+                       if (!isDraggingProgressRef.current) {
+                         setIsDraggingProgress(false);
+                       }
+                     }}
+                     style={{ 
+                       background: 'linear-gradient(to bottom, #e5e7eb 0%, #d1d5db 100%)',
+                       border: '1px solid #9ca3af',
+                       boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                     }}
+                   >
+                      {/* Progress Fill - Blue gradient matching menu selection */}
+                      <div 
+                        className="h-full rounded-full"
+                        style={{ 
+                          width: `${progress}%`, 
+                          background: 'linear-gradient(to bottom, #5c94fa 0%, #2668e3 100%)',
+                          boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3), 0 1px 1px rgba(0,0,0,0.1)',
+                          transition: isDraggingProgress ? 'none' : 'width 0.1s ease-out'
+                        }}
+                      ></div>
+                      {/* Drag Handle - Blue circle matching theme */}
+                      <div 
+                        className={`absolute top-1/2 -translate-y-1/2 rounded-full cursor-grab active:cursor-grabbing z-50 ${
+                          isDraggingProgress ? 'opacity-100 w-3.5 h-3.5 shadow-md' : 'opacity-0 group-hover:opacity-100 w-3 h-3 shadow-sm'
+                        }`}
+                        style={{ 
+                          left: `calc(${progress}% - ${isDraggingProgress ? '7px' : '6px'})`,
+                          background: 'linear-gradient(to bottom, #5c94fa 0%, #2668e3 100%)',
+                          border: '2px solid white',
+                          boxShadow: isDraggingProgress 
+                            ? '0 2px 4px rgba(0,0,0,0.3), 0 0 0 1px rgba(92,148,250,0.5)' 
+                            : '0 1px 2px rgba(0,0,0,0.2)',
+                          transition: isDraggingProgress 
+                            ? 'opacity 0.1s ease-out, box-shadow 0.1s ease-out' 
+                            : 'left 0.1s ease-out, opacity 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out, box-shadow 0.2s ease-out'
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          handleProgressBarStart(e);
+                        }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                          handleProgressBarStart(e);
+                        }}
+                      ></div>
+                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* LCD Overlay Effects (The "Authenticity" Layer) */}
+            {/* 1. Inner Shadow for depth behind the plastic window */}
+            <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"></div>
+            {/* 2. Subtle Pixel Grid */}
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-[0.03]"
+              style={{ backgroundImage: 'linear-gradient(0deg, transparent 24%, #000 25%, #000 26%, transparent 27%, transparent 74%, #000 75%, #000 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, #000 25%, #000 26%, transparent 27%, transparent 74%, #000 75%, #000 76%, transparent 77%, transparent)', backgroundSize: '4px 4px' }}
+            ></div>
+          </div>
+          
+          {/* Physical Glass Reflection */}
+          <div className="absolute top-0 right-0 w-[150%] h-full bg-gradient-to-l from-white/10 to-transparent pointer-events-none transform rotate-12 translate-x-10"></div>
         </div>
-        <div className="flex-1 flex items-center justify-center mt-4">
-           <div className="w-40 h-40 rounded-full bg-white shadow-md relative flex items-center justify-center border border-gray-200">
-              <div className="absolute top-4 text-[10px] font-bold text-gray-400">MENU</div>
-              <div className="w-14 h-14 rounded-full bg-gray-200 shadow-inner"></div>
-           </div>
+
+        {/* --- Click Wheel --- */}
+        <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2">
+          <div 
+            className="w-48 h-48 rounded-full relative active:scale-[0.99] transition-transform"
+            ref={wheelRef}
+            onMouseDown={handleWheelStart}
+            onTouchStart={handleWheelStart}
+            style={{
+              background: '#f2f2f2',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -2px 5px rgba(0,0,0,0.05)'
+            }}
+          >
+            {/* MENU Button */}
+            <button 
+              className="absolute top-2 left-1/2 transform -translate-x-1/2 text-[11px] font-bold text-gray-400 tracking-widest hover:text-gray-600"
+              onClick={handleMenuClick}
+            >
+              MENU
+            </button>
+
+            {/* Next Button */}
+            <button 
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              onClick={handleNext}
+            >
+              <FastForward size={14} fill="currentColor" />
+            </button>
+
+            {/* Prev Button */}
+            <button 
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              onClick={handlePrev}
+            >
+              <Rewind size={14} fill="currentColor" />
+            </button>
+
+            {/* Play/Pause Button */}
+            <button 
+              className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-gray-400 hover:text-gray-600 flex gap-[2px]"
+              onClick={handlePlayPause}
+            >
+              <Play size={10} fill="currentColor" />
+              <Pause size={10} fill="currentColor" />
+            </button>
+
+            {/* Center Button */}
+            <button 
+              onClick={handleCenterClick}
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-b from-[#e8e8e8] to-[#dcdcdc] active:bg-[#d0d0d0]"
+              style={{
+                boxShadow: 'inset 0 1px 2px rgba(255,255,255,1), inset 0 -1px 2px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)'
+              }}
+            ></button>
+          </div>
         </div>
-     </div>
-  </div>
-);
+
+        {/* --- Bottom Ports (Visual) --- */}
+        {/* Just a subtle shadow at the bottom to suggest curvature */}
+        <div className="absolute bottom-0 w-full h-4 bg-gradient-to-t from-gray-400/20 to-transparent"></div>
+      </div>
+    </div>
+  );
+};
 
 // --- Main ---
 export default function App() {
   const [windows, setWindows] = useState([]);
   const [activeWindowId, setActiveWindowId] = useState(null);
   const [maxZ, setMaxZ] = useState(10);
+  const [globalVolume, setGlobalVolume] = useState(70); // Global volume state
 
   // Center helper
   const getCenteredPos = (w, h) => ({ x: (window.innerWidth / 2) - (w / 2), y: (window.innerHeight / 2) - (h / 2) });
@@ -1150,11 +2089,11 @@ export default function App() {
       
       {/* Global Definitions */}
       <GlobalSVGDefs />
-      <MenuBar />
+      <MenuBar volume={globalVolume} setVolume={setGlobalVolume} />
 
       <div className="absolute top-12 right-6 flex flex-col gap-2 items-end z-0">
         <div onClick={() => toggleWindow('finder-main', 'finder', 'Macintosh HD')}><HardDriveIcon /></div>
-        <div onClick={() => toggleWindow('ipod', 'ipod', 'iPod', 280, 450)}><IpodDesktopIcon /></div>
+        <div onClick={() => toggleWindow('ipod', 'ipod', 'iPod', 320, 508)}><IpodDesktopIcon /></div>
       </div>
 
       <div className="absolute inset-0 top-7 bottom-24 pointer-events-none">
@@ -1164,7 +2103,7 @@ export default function App() {
               {win.type === 'finder' && <FinderGrid />}
               {win.type === 'trash' && <TrashGrid />}
               {win.type === 'chat' && <ChatApp />}
-              {win.type === 'ipod' && <IPodApp />}
+              {win.type === 'ipod' && <IPodApp globalVolume={globalVolume} />}
             </Window>
           </div>
         ))}
