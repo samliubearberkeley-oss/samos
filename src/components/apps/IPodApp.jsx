@@ -387,15 +387,20 @@ export const IPodApp = ({ globalVolume }) => {
   // Center button diameter: 64px = 4rem (w-16 h-16)
   // Ring centerline radius = (outerRadius + innerRadius) / 2
   const buttonPositions = useMemo(() => {
-    const isMobile = windowWidth <= 768;
-    const wheelSize = isMobile ? 176 : 192; // px
+    // Tailwind md: breakpoint is min-width: 768px, so use < 768 for mobile
+    const isMobile = windowWidth < 768;
+    const wheelSize = isMobile ? 176 : 192; // px (w-44 or w-48)
     const centerButtonSize = 64; // px (w-16 h-16)
     const wheelRadius = wheelSize / 2; // 88px or 96px
     const centerButtonRadius = centerButtonSize / 2; // 32px
-    const innerRadius = centerButtonRadius; // 32px
-    const outerRadius = wheelRadius; // 88px or 96px
-    // Ring centerline: middle of the ring (where buttons should be placed)
-    const ringCenterlineRadius = (innerRadius + outerRadius) / 2; // 60px (mobile) or 64px (desktop)
+    
+    // The touch ring starts where center button ends
+    const touchRingInnerRadius = centerButtonRadius; // 32px
+    const touchRingOuterRadius = wheelRadius; // 88px or 96px
+    const touchRingWidth = touchRingOuterRadius - touchRingInnerRadius; // 56px
+    
+    // Buttons should be at the centerline of the touch ring
+    const ringCenterlineRadius = touchRingInnerRadius + (touchRingWidth / 2); // 32 + 28 = 60px
     
     // Calculate button positions on ring centerline (90° apart)
     // 0° = right, 90° = bottom, 180° = left, 270° = top
@@ -409,35 +414,14 @@ export const IPodApp = ({ globalVolume }) => {
     };
     
     // === Button Position Logic ===
-    // All buttons use the same ring centerline radius for consistent positioning
-    // Top button (MENU) - 270° (12 o'clock) - ✓ Correct
-    const topButton = getButtonPosition(270);
+    // ALL buttons must use EXACTLY the same distance from center
+    // User confirmed: top/bottom are correct, so apply SAME logic to left/right
     
-    // Bottom button (Play/Pause) - 90° (6 o'clock) - ✓ Correct
-    const bottomButton = getButtonPosition(90);
-    
-    // Right button (Next) - 0° (3 o'clock) - Use same centerline radius
-    const rightButton = getButtonPosition(0);
-    
-    // Left button (Prev) - 180° (9 o'clock) - Use same centerline radius
-    const leftButton = getButtonPosition(180);
-    
-    // Debug: Log all calculations
-    console.log('=== iPod Button Position Debug ===');
-    console.log('Window Width:', windowWidth);
-    console.log('Is Mobile:', isMobile);
-    console.log('Wheel Size:', wheelSize, 'px');
-    console.log('Wheel Radius:', wheelRadius, 'px');
-    console.log('Center Button Size:', centerButtonSize, 'px');
-    console.log('Inner Radius:', innerRadius, 'px');
-    console.log('Outer Radius:', outerRadius, 'px');
-    console.log('Ring Centerline Radius:', ringCenterlineRadius, 'px');
-    console.log('---');
-    console.log('Top (MENU):', topButton);
-    console.log('Bottom (Play):', bottomButton);
-    console.log('Right (Next):', rightButton);
-    console.log('Left (Prev):', leftButton);
-    console.log('===================================');
+    // All 4 buttons at the same radius on the ring centerline
+    const topButton = getButtonPosition(270);     // Top (MENU)
+    const bottomButton = getButtonPosition(90);   // Bottom (Play/Pause)
+    const rightButton = getButtonPosition(0);     // Right (Next)
+    const leftButton = getButtonPosition(180);    // Left (Prev)
     
     return {
       menu: topButton,
