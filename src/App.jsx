@@ -1141,18 +1141,15 @@ export default function App() {
   return (
     <div className="w-screen h-screen overflow-hidden relative select-none font-sans" 
          style={{
-           // Classic Aqua Blue Wallpaper
-           background: `radial-gradient(circle at 50% 30%, #5498db 0%, #3879c2 40%, #1e5799 100%)`
+           backgroundImage: 'url(/wallpaper.jpg)',
+           backgroundSize: 'cover',
+           backgroundPosition: 'center',
+           backgroundRepeat: 'no-repeat',
+           backgroundAttachment: 'fixed'
          }}>
       
       {/* Global Definitions */}
       <GlobalSVGDefs />
-      
-      {/* Wallpaper Waves */}
-      <div className="absolute inset-0 pointer-events-none opacity-20" style={{
-        background: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 20%, rgba(255,255,255,0.05) 40%)',
-        backgroundSize: '100% 150px'
-      }}></div>
       <MenuBar />
 
       <div className="absolute top-12 right-6 flex flex-col gap-2 items-end z-0">
