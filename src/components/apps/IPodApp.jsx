@@ -381,45 +381,6 @@ export const IPodApp = ({ globalVolume }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  // Calculate button positions using geometry
-  // Wheel size: 176px (11rem = 11 * 16px = 176px)
-  const wheelSize = 176; // Fixed size matching the 11rem in styles
-  const wheelRadius = wheelSize / 2; // 88px
-  // Increase distance ratio to move buttons closer to edge
-  const buttonDistanceRatio = 0.80; // Buttons at 80% of radius from center (70.4px)
-  const buttonDistance = wheelRadius * buttonDistanceRatio; // 70.4px
-  
-  // Calculate positions (angles in degrees)
-  // CSS coordinate system: origin at top-left, y increases downward
-  // 0° = right (3 o'clock), 90° = bottom (6 o'clock), 180° = left (9 o'clock), 270° = top (12 o'clock)
-  const getButtonPosition = (angleDegrees) => {
-    const angleRad = (angleDegrees * Math.PI) / 180;
-    // Standard math: cos for x, sin for y
-    // But CSS y-axis is downward, so we use standard math convention
-    const x = wheelRadius + buttonDistance * Math.cos(angleRad);
-    const y = wheelRadius + buttonDistance * Math.sin(angleRad);
-    return { x: `${x}px`, y: `${y}px`, xNum: x, yNum: y };
-  };
-  
-  // Button positions - verified: MENU (270°) is correct
-  const menuPos = getButtonPosition(270);    // Top (12 o'clock) - ✓ Correct
-  const nextPos = getButtonPosition(0);       // Right (3 o'clock)
-  const playPos = getButtonPosition(90);      // Bottom (6 o'clock)
-  const prevPos = getButtonPosition(180);     // Left (9 o'clock)
-  
-  // Debug: Log button positions (only in development)
-  useEffect(() => {
-    console.log('🎯 iPod Button Position Debug:');
-    console.log('Wheel Size:', wheelSize, 'px');
-    console.log('Wheel Radius:', wheelRadius, 'px');
-    console.log('Button Distance Ratio:', buttonDistanceRatio);
-    console.log('Button Distance from Center:', buttonDistance.toFixed(2), 'px');
-    console.log('---');
-    console.log('MENU (270°):', `x=${menuPos.xNum.toFixed(2)}px, y=${menuPos.yNum.toFixed(2)}px`);
-    console.log('Next (0°):', `x=${nextPos.xNum.toFixed(2)}px, y=${nextPos.yNum.toFixed(2)}px`);
-    console.log('Play (90°):', `x=${playPos.xNum.toFixed(2)}px, y=${playPos.yNum.toFixed(2)}px`);
-    console.log('Prev (180°):', `x=${prevPos.xNum.toFixed(2)}px, y=${prevPos.yNum.toFixed(2)}px`);
-  }, []);
 
   return (
     <div className="h-full w-full flex items-center justify-center font-sans p-2 md:p-0 overflow-hidden">
@@ -594,7 +555,7 @@ export const IPodApp = ({ globalVolume }) => {
         </div>
 
         {/* --- Click Wheel --- */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 shrink-0" style={{ bottom: '2.5rem' }}>
+        <div className="absolute bottom-10 md:bottom-12 left-1/2 transform -translate-x-1/2 shrink-0">
           <div 
             className="w-44 h-44 md:w-48 md:h-48 rounded-full relative active:scale-[0.99] transition-transform shrink-0"
             ref={wheelRef}
@@ -602,69 +563,39 @@ export const IPodApp = ({ globalVolume }) => {
             onTouchStart={(e) => { e.stopPropagation(); handleWheelStart(e); }}
             style={{
               background: '#f2f2f2',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -2px 5px rgba(0,0,0,0.05)',
-              width: '11rem',
-              height: '11rem',
-              minWidth: '11rem',
-              minHeight: '11rem'
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -2px 5px rgba(0,0,0,0.05)'
             }}
           >
-            {/* MENU Button (Top - 270°) - Verified Correct */}
+            {/* MENU Button - Top, horizontally centered */}
             <button 
-              className="absolute text-gray-400 hover:text-gray-600"
-              style={{
-                left: menuPos.x,
-                top: menuPos.y,
-                transform: 'translate(-50%, -50%)',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                letterSpacing: '0.1em'
-              }}
+              className="absolute top-2 left-1/2 transform -translate-x-1/2 text-[11px] font-bold text-gray-400 tracking-widest hover:text-gray-600"
               onClick={(e) => { e.stopPropagation(); handleMenuClick(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               MENU
             </button>
 
-            {/* Prev Button (Left - 180°) - Adjust position */}
+            {/* Next Button - Right, vertically centered */}
             <button 
-              className="absolute text-gray-400 hover:text-gray-600"
-              style={{
-                left: `${wheelRadius - buttonDistance}px`,
-                top: `${wheelRadius}px`,
-                transform: 'translate(-50%, -50%)'
-              }}
-              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-              onTouchEnd={(e) => { e.stopPropagation(); }}
-            >
-              <Rewind size={14} fill="currentColor" />
-            </button>
-
-            {/* Next Button (Right - 0°) - Adjust position */}
-            <button 
-              className="absolute text-gray-400 hover:text-gray-600"
-              style={{
-                left: `${wheelRadius + buttonDistance}px`,
-                top: `${wheelRadius}px`,
-                transform: 'translate(-50%, -50%)'
-              }}
+              className="absolute right-3 md:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               onClick={(e) => { e.stopPropagation(); handleNext(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               <FastForward size={14} fill="currentColor" />
             </button>
 
-            {/* Play/Pause Button (Bottom - 90°) - Adjust position */}
+            {/* Prev Button - Left, vertically centered */}
             <button 
-              className="absolute text-gray-400 hover:text-gray-600"
-              style={{
-                left: `${wheelRadius}px`,
-                top: `${wheelRadius + buttonDistance}px`,
-                transform: 'translate(-50%, -50%)',
-                display: 'flex',
-                gap: '2px',
-                alignItems: 'center'
-              }}
+              className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+              onTouchEnd={(e) => { e.stopPropagation(); }}
+            >
+              <Rewind size={14} fill="currentColor" />
+            </button>
+
+            {/* Play/Pause Button - Bottom, horizontally centered */}
+            <button 
+              className="absolute bottom-2.5 md:bottom-3 left-1/2 transform -translate-x-1/2 text-gray-400 hover:text-gray-600 flex gap-[2px] items-center"
               onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
@@ -672,7 +603,7 @@ export const IPodApp = ({ globalVolume }) => {
               <Pause size={10} fill="currentColor" />
             </button>
 
-            {/* Center Button */}
+            {/* Center Button - Perfectly centered */}
             <button 
               onClick={(e) => { e.stopPropagation(); handleCenterClick(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
