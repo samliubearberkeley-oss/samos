@@ -385,19 +385,24 @@ export const IPodApp = ({ globalVolume }) => {
   // Wheel size: 176px (11rem = 11 * 16px = 176px)
   const wheelSize = 176; // Fixed size matching the 11rem in styles
   const wheelRadius = wheelSize / 2; // 88px
-  const buttonDistanceRatio = 0.72; // Adjustable: buttons at 72% of radius from center
-  const buttonDistance = wheelRadius * buttonDistanceRatio; // 63.36px
+  // Increase distance ratio to move buttons closer to edge
+  const buttonDistanceRatio = 0.80; // Buttons at 80% of radius from center (70.4px)
+  const buttonDistance = wheelRadius * buttonDistanceRatio; // 70.4px
   
   // Calculate positions (angles in degrees)
+  // CSS coordinate system: origin at top-left, y increases downward
   // 0° = right (3 o'clock), 90° = bottom (6 o'clock), 180° = left (9 o'clock), 270° = top (12 o'clock)
   const getButtonPosition = (angleDegrees) => {
     const angleRad = (angleDegrees * Math.PI) / 180;
+    // Standard math: cos for x, sin for y
+    // But CSS y-axis is downward, so we use standard math convention
     const x = wheelRadius + buttonDistance * Math.cos(angleRad);
     const y = wheelRadius + buttonDistance * Math.sin(angleRad);
     return { x: `${x}px`, y: `${y}px`, xNum: x, yNum: y };
   };
   
-  const menuPos = getButtonPosition(270);    // Top (12 o'clock)
+  // Button positions - verified: MENU (270°) is correct
+  const menuPos = getButtonPosition(270);    // Top (12 o'clock) - ✓ Correct
   const nextPos = getButtonPosition(0);       // Right (3 o'clock)
   const playPos = getButtonPosition(90);      // Bottom (6 o'clock)
   const prevPos = getButtonPosition(180);     // Left (9 o'clock)
@@ -604,7 +609,7 @@ export const IPodApp = ({ globalVolume }) => {
               minHeight: '11rem'
             }}
           >
-            {/* MENU Button (Top - 270°) */}
+            {/* MENU Button (Top - 270°) - Verified Correct */}
             <button 
               className="absolute text-gray-400 hover:text-gray-600"
               style={{
@@ -621,12 +626,12 @@ export const IPodApp = ({ globalVolume }) => {
               MENU
             </button>
 
-            {/* Prev Button (Left - 180°) */}
+            {/* Prev Button (Left - 180°) - Adjust position */}
             <button 
               className="absolute text-gray-400 hover:text-gray-600"
               style={{
-                left: prevPos.x,
-                top: prevPos.y,
+                left: `${wheelRadius - buttonDistance}px`,
+                top: `${wheelRadius}px`,
                 transform: 'translate(-50%, -50%)'
               }}
               onClick={(e) => { e.stopPropagation(); handlePrev(); }}
@@ -635,12 +640,12 @@ export const IPodApp = ({ globalVolume }) => {
               <Rewind size={14} fill="currentColor" />
             </button>
 
-            {/* Next Button (Right - 0°) */}
+            {/* Next Button (Right - 0°) - Adjust position */}
             <button 
               className="absolute text-gray-400 hover:text-gray-600"
               style={{
-                left: nextPos.x,
-                top: nextPos.y,
+                left: `${wheelRadius + buttonDistance}px`,
+                top: `${wheelRadius}px`,
                 transform: 'translate(-50%, -50%)'
               }}
               onClick={(e) => { e.stopPropagation(); handleNext(); }}
@@ -649,12 +654,12 @@ export const IPodApp = ({ globalVolume }) => {
               <FastForward size={14} fill="currentColor" />
             </button>
 
-            {/* Play/Pause Button (Bottom - 90°) */}
+            {/* Play/Pause Button (Bottom - 90°) - Adjust position */}
             <button 
               className="absolute text-gray-400 hover:text-gray-600"
               style={{
-                left: playPos.x,
-                top: playPos.y,
+                left: `${wheelRadius}px`,
+                top: `${wheelRadius + buttonDistance}px`,
                 transform: 'translate(-50%, -50%)',
                 display: 'flex',
                 gap: '2px',
