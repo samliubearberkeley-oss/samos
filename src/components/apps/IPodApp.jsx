@@ -422,6 +422,23 @@ export const IPodApp = ({ globalVolume }) => {
     // Left button (Prev) - 180° (9 o'clock) - Use same centerline radius
     const leftButton = getButtonPosition(180);
     
+    // Debug: Log all calculations
+    console.log('=== iPod Button Position Debug ===');
+    console.log('Window Width:', windowWidth);
+    console.log('Is Mobile:', isMobile);
+    console.log('Wheel Size:', wheelSize, 'px');
+    console.log('Wheel Radius:', wheelRadius, 'px');
+    console.log('Center Button Size:', centerButtonSize, 'px');
+    console.log('Inner Radius:', innerRadius, 'px');
+    console.log('Outer Radius:', outerRadius, 'px');
+    console.log('Ring Centerline Radius:', ringCenterlineRadius, 'px');
+    console.log('---');
+    console.log('Top (MENU):', topButton);
+    console.log('Bottom (Play):', bottomButton);
+    console.log('Right (Next):', rightButton);
+    console.log('Left (Prev):', leftButton);
+    console.log('===================================');
+    
     return {
       menu: topButton,
       next: rightButton,
