@@ -395,8 +395,6 @@ export const IPodApp = ({ globalVolume }) => {
     const innerRadius = centerButtonRadius; // 32px
     const outerRadius = wheelRadius; // 88px or 96px
     // Ring centerline: middle of the ring (where buttons should be placed)
-    // For vertical buttons (top/bottom), use centerline
-    // For horizontal buttons (left/right), may need slight adjustment
     const ringCenterlineRadius = (innerRadius + outerRadius) / 2; // 60px (mobile) or 64px (desktop)
     
     // Calculate button positions on ring centerline (90° apart)
@@ -410,13 +408,25 @@ export const IPodApp = ({ globalVolume }) => {
       return { x: `${x}px`, y: `${y}px` };
     };
     
-    // All buttons use the same centerline radius for consistent positioning
-    // Calculate all positions using the same method
+    // === Button Position Logic ===
+    // All buttons use the same ring centerline radius for consistent positioning
+    // Top button (MENU) - 270° (12 o'clock) - ✓ Correct
+    const topButton = getButtonPosition(270);
+    
+    // Bottom button (Play/Pause) - 90° (6 o'clock) - ✓ Correct
+    const bottomButton = getButtonPosition(90);
+    
+    // Right button (Next) - 0° (3 o'clock) - Use same centerline radius
+    const rightButton = getButtonPosition(0);
+    
+    // Left button (Prev) - 180° (9 o'clock) - Use same centerline radius
+    const leftButton = getButtonPosition(180);
+    
     return {
-      menu: getButtonPosition(270),    // Top (12 o'clock)
-      next: getButtonPosition(0),       // Right (3 o'clock)
-      play: getButtonPosition(90),      // Bottom (6 o'clock)
-      prev: getButtonPosition(180)      // Left (9 o'clock)
+      menu: topButton,
+      next: rightButton,
+      play: bottomButton,
+      prev: leftButton
     };
   }, [windowWidth]);
 
