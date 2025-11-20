@@ -385,7 +385,8 @@ export const IPodApp = ({ globalVolume }) => {
   // Wheel size: 176px (11rem = 11 * 16px = 176px)
   const wheelSize = 176; // Fixed size matching the 11rem in styles
   const wheelRadius = wheelSize / 2; // 88px
-  const buttonDistance = wheelRadius * 0.72; // Buttons at 72% of radius from center (63.36px)
+  const buttonDistanceRatio = 0.72; // Adjustable: buttons at 72% of radius from center
+  const buttonDistance = wheelRadius * buttonDistanceRatio; // 63.36px
   
   // Calculate positions (angles in degrees)
   // 0° = right (3 o'clock), 90° = bottom (6 o'clock), 180° = left (9 o'clock), 270° = top (12 o'clock)
@@ -393,13 +394,27 @@ export const IPodApp = ({ globalVolume }) => {
     const angleRad = (angleDegrees * Math.PI) / 180;
     const x = wheelRadius + buttonDistance * Math.cos(angleRad);
     const y = wheelRadius + buttonDistance * Math.sin(angleRad);
-    return { x: `${x}px`, y: `${y}px` };
+    return { x: `${x}px`, y: `${y}px`, xNum: x, yNum: y };
   };
   
   const menuPos = getButtonPosition(270);    // Top (12 o'clock)
   const nextPos = getButtonPosition(0);       // Right (3 o'clock)
   const playPos = getButtonPosition(90);      // Bottom (6 o'clock)
   const prevPos = getButtonPosition(180);     // Left (9 o'clock)
+  
+  // Debug: Log button positions (only in development)
+  useEffect(() => {
+    console.log('🎯 iPod Button Position Debug:');
+    console.log('Wheel Size:', wheelSize, 'px');
+    console.log('Wheel Radius:', wheelRadius, 'px');
+    console.log('Button Distance Ratio:', buttonDistanceRatio);
+    console.log('Button Distance from Center:', buttonDistance.toFixed(2), 'px');
+    console.log('---');
+    console.log('MENU (270°):', `x=${menuPos.xNum.toFixed(2)}px, y=${menuPos.yNum.toFixed(2)}px`);
+    console.log('Next (0°):', `x=${nextPos.xNum.toFixed(2)}px, y=${nextPos.yNum.toFixed(2)}px`);
+    console.log('Play (90°):', `x=${playPos.xNum.toFixed(2)}px, y=${playPos.yNum.toFixed(2)}px`);
+    console.log('Prev (180°):', `x=${prevPos.xNum.toFixed(2)}px, y=${prevPos.yNum.toFixed(2)}px`);
+  }, []);
 
   return (
     <div className="h-full w-full flex items-center justify-center font-sans p-2 md:p-0 overflow-hidden">
