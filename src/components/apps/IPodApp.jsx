@@ -395,22 +395,42 @@ export const IPodApp = ({ globalVolume }) => {
     const innerRadius = centerButtonRadius; // 32px
     const outerRadius = wheelRadius; // 88px or 96px
     // Ring centerline: middle of the ring (where buttons should be placed)
+    // For vertical buttons (top/bottom), use centerline
+    // For horizontal buttons (left/right), may need slight adjustment
     const ringCenterlineRadius = (innerRadius + outerRadius) / 2; // 60px (mobile) or 64px (desktop)
     
     // Calculate button positions on ring centerline (90° apart)
     // 0° = right, 90° = bottom, 180° = left, 270° = top
+    // CSS coordinate: x increases right, y increases down
     const getButtonPosition = (angleDegrees) => {
       const angleRad = (angleDegrees * Math.PI) / 180;
+      // Standard math: 0° = right, 90° = bottom, 180° = left, 270° = top
       const x = wheelRadius + ringCenterlineRadius * Math.cos(angleRad);
       const y = wheelRadius + ringCenterlineRadius * Math.sin(angleRad);
       return { x: `${x}px`, y: `${y}px` };
     };
     
+    // Vertical buttons (top/bottom) - use centerline radius
+    const menuPos = getButtonPosition(270);    // Top (12 o'clock)
+    const playPos = getButtonPosition(90);      // Bottom (6 o'clock)
+    
+    // Horizontal buttons (left/right) - may need different radius
+    // Try using a slightly larger radius for horizontal buttons
+    const horizontalRadius = ringCenterlineRadius * 1.05; // 5% larger for horizontal
+    const nextPos = {
+      x: `${wheelRadius + horizontalRadius}px`,
+      y: `${wheelRadius}px`
+    };
+    const prevPos = {
+      x: `${wheelRadius - horizontalRadius}px`,
+      y: `${wheelRadius}px`
+    };
+    
     return {
-      menu: getButtonPosition(270),    // Top (12 o'clock)
-      next: getButtonPosition(0),       // Right (3 o'clock)
-      play: getButtonPosition(90),      // Bottom (6 o'clock)
-      prev: getButtonPosition(180)      // Left (9 o'clock)
+      menu: menuPos,
+      next: nextPos,
+      play: playPos,
+      prev: prevPos
     };
   }, [windowWidth]);
 
