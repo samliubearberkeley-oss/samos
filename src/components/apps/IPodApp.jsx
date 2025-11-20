@@ -410,27 +410,13 @@ export const IPodApp = ({ globalVolume }) => {
       return { x: `${x}px`, y: `${y}px` };
     };
     
-    // Vertical buttons (top/bottom) - use centerline radius
-    const menuPos = getButtonPosition(270);    // Top (12 o'clock)
-    const playPos = getButtonPosition(90);      // Bottom (6 o'clock)
-    
-    // Horizontal buttons (left/right) - may need different radius
-    // Try using a slightly larger radius for horizontal buttons
-    const horizontalRadius = ringCenterlineRadius * 1.05; // 5% larger for horizontal
-    const nextPos = {
-      x: `${wheelRadius + horizontalRadius}px`,
-      y: `${wheelRadius}px`
-    };
-    const prevPos = {
-      x: `${wheelRadius - horizontalRadius}px`,
-      y: `${wheelRadius}px`
-    };
-    
+    // All buttons use the same centerline radius for consistent positioning
+    // Calculate all positions using the same method
     return {
-      menu: menuPos,
-      next: nextPos,
-      play: playPos,
-      prev: prevPos
+      menu: getButtonPosition(270),    // Top (12 o'clock)
+      next: getButtonPosition(0),       // Right (3 o'clock)
+      play: getButtonPosition(90),      // Bottom (6 o'clock)
+      prev: getButtonPosition(180)      // Left (9 o'clock)
     };
   }, [windowWidth]);
 
