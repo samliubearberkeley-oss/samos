@@ -678,8 +678,11 @@ const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onF
 
   const handleMouseDown = (e) => {
     onFocus(id);
-    setIsDragging(true);
-    dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    // Disable dragging on mobile
+    if (!isMobile) {
+      setIsDragging(true);
+      dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    }
   };
 
   useEffect(() => {
@@ -705,28 +708,30 @@ const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onF
   const pinstripe = `repeating-linear-gradient(to right, #f5f5f5, #f5f5f5 2px, #ffffff 2px, #ffffff 4px)`;
 
   // Mobile responsive dimensions
-  const mobileWidth = isMobile ? window.innerWidth - 16 : width;
-  const mobileHeight = isMobile ? window.innerHeight - 100 : height;
-  const mobileX = isMobile ? 8 : pos.x;
-  const mobileY = isMobile ? 40 : pos.y;
+  // For mobile: leave space for menu bar (28px) and dock (70px) = 98px total
+  // Add some padding: top 36px, bottom 78px = 114px total
+  const mobileWidth = isMobile ? Math.min(width, window.innerWidth - 16) : width;
+  const mobileHeight = isMobile ? Math.min(height, window.innerHeight - 114) : height;
+  const mobileX = isMobile ? Math.max(8, (window.innerWidth - mobileWidth) / 2) : pos.x;
+  const mobileY = isMobile ? 36 : pos.y;
 
   return (
     <div
       style={{ 
         left: mobileX, 
         top: mobileY, 
-        width: isMobile ? mobileWidth : width, 
-        height: isMobile ? mobileHeight : height, 
+        width: mobileWidth, 
+        height: mobileHeight, 
         zIndex, 
         position: 'absolute',
-        maxWidth: isMobile ? '100vw' : 'none',
-        maxHeight: isMobile ? 'calc(100vh - 120px)' : 'none'
+        maxWidth: isMobile ? 'calc(100vw - 16px)' : 'none',
+        maxHeight: isMobile ? 'calc(100vh - 114px)' : 'none'
       }}
       className={`flex flex-col shadow-2xl overflow-hidden ${isActive ? 'shadow-black/30' : 'shadow-black/10'} ${type === 'ipod' ? 'rounded-2xl' : 'rounded-t-lg rounded-b'}`}
       onMouseDown={() => onFocus(id)}
       onTouchStart={() => onFocus(id)}
     >
-      <div className={`h-7 md:h-7 flex items-center justify-between px-2 select-none border-b border-gray-400 ${type === 'ipod' ? 'rounded-t-2xl' : ''}`} style={{ background: titleBarGradient }} onMouseDown={handleMouseDown} onTouchStart={handleMouseDown}>
+      <div className={`h-7 md:h-7 flex items-center justify-between px-2 select-none border-b border-gray-400 ${type === 'ipod' ? 'rounded-t-2xl' : ''} ${isMobile ? 'cursor-default' : 'cursor-move'}`} style={{ background: titleBarGradient }} onMouseDown={handleMouseDown} onTouchStart={(e) => { e.preventDefault(); onFocus(id); }}>
         <TrafficLights onClose={() => onClose(id)} />
         <span className="text-xs md:text-sm font-semibold text-gray-700 shadow-sm truncate flex-1 px-2">{title}</span>
         <div className="w-12"></div>
