@@ -520,15 +520,15 @@ const MenuBar = ({ volume, setVolume }) => {
 
   return (
     <div 
-      className="h-7 border-b border-[#b4b4b4] flex items-center justify-between px-4 fixed top-0 w-full z-50 shadow-sm text-sm select-none font-sans" 
+      className="h-7 md:h-7 border-b border-[#b4b4b4] flex items-center justify-between px-2 md:px-4 fixed top-0 w-full z-50 shadow-sm text-xs md:text-sm select-none font-sans" 
       style={{
         background: `repeating-linear-gradient(to right, #f6f6f6, #f6f6f6 2px, #e0e0e0 2px, #e0e0e0 4px)`,
         backgroundImage: `linear-gradient(to bottom, #f6f6f6, #e0e0e0), repeating-linear-gradient(to right, #f6f6f6, #f6f6f6 2px, #e0e0e0 2px, #e0e0e0 4px)`
       }}
       ref={menuRef}
     >
-      <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center -ml-4 -mr-2" style={{ height: '3.125rem', width: 'auto', aspectRatio: '1' }}>
+      <div className="flex items-center gap-1 md:gap-2 overflow-x-auto">
+        <div className="flex items-center justify-center -ml-2 md:-ml-4 -mr-1 md:-mr-2 flex-shrink-0" style={{ height: '3.125rem', width: 'auto', aspectRatio: '1' }}>
           <IconImage 
             src="/icons/apple-icon.png" 
             alt="Apple"
@@ -536,18 +536,18 @@ const MenuBar = ({ volume, setVolume }) => {
           />
         </div>
         {['File', 'Edit', 'View', 'Go', 'Help'].map(menu => (
-          <div key={menu} className="relative">
-            <span className={`text-gray-800 drop-shadow-sm cursor-pointer px-1 rounded ${activeMenu === menu ? 'bg-[#3875d7] text-white' : 'hover:bg-blue-400/50'}`} onClick={() => setActiveMenu(activeMenu === menu ? null : menu)}>{menu}</span>
+          <div key={menu} className="relative flex-shrink-0">
+            <span className={`text-gray-800 drop-shadow-sm cursor-pointer px-1 md:px-1 rounded text-xs md:text-sm ${activeMenu === menu ? 'bg-[#3875d7] text-white' : 'hover:bg-blue-400/50'}`} onClick={() => setActiveMenu(activeMenu === menu ? null : menu)}>{menu}</span>
             {activeMenu === menu && renderMenu(MENU_ITEMS[menu.toLowerCase()])}
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
         <div className="relative" ref={volRef}>
-           <Volume2 size={16} className="text-gray-700 cursor-pointer hover:text-black" onClick={() => setShowVolume(!showVolume)}/>
+           <Volume2 size={16} className="text-gray-700 cursor-pointer hover:text-black min-w-[20px] min-h-[20px]" onClick={() => setShowVolume(!showVolume)}/>
            {showVolume && <VolumeControl volume={volume} setVolume={setVolume} />}
         </div>
-        <span className="text-xs font-medium text-gray-700">{formatTime(currentTime)}</span>
+        <span className="text-[10px] md:text-xs font-medium text-gray-700 whitespace-nowrap hidden sm:inline">{formatTime(currentTime)}</span>
       </div>
     </div>
   );
@@ -645,7 +645,18 @@ const TrafficLights = ({ onClose }) => (
 const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onFocus, children, type }) => {
   const [pos, setPos] = useState({ x, y });
   const [isDragging, setIsDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const dragOffset = useRef({ x: 0, y: 0 });
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleMouseDown = (e) => {
     onFocus(id);
@@ -661,25 +672,45 @@ const Window = ({ id, title, x, y, width, height, zIndex, isActive, onClose, onF
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleMouseMove);
+      window.addEventListener('touchend', handleMouseUp);
     }
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleMouseMove);
+      window.removeEventListener('touchend', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, pos]);
 
   const titleBarGradient = `linear-gradient(to bottom, #e6e6e6 0%, #dcdcdc 50%, #c8c8c8 50%, #b4b4b4 100%)`;
   const pinstripe = `repeating-linear-gradient(to right, #f5f5f5, #f5f5f5 2px, #ffffff 2px, #ffffff 4px)`;
 
+  // Mobile responsive dimensions
+  const mobileWidth = isMobile ? window.innerWidth - 16 : width;
+  const mobileHeight = isMobile ? window.innerHeight - 100 : height;
+  const mobileX = isMobile ? 8 : pos.x;
+  const mobileY = isMobile ? 40 : pos.y;
+
   return (
     <div
-      style={{ left: pos.x, top: pos.y, width, height, zIndex, position: 'absolute' }}
+      style={{ 
+        left: mobileX, 
+        top: mobileY, 
+        width: isMobile ? mobileWidth : width, 
+        height: isMobile ? mobileHeight : height, 
+        zIndex, 
+        position: 'absolute',
+        maxWidth: isMobile ? '100vw' : 'none',
+        maxHeight: isMobile ? 'calc(100vh - 120px)' : 'none'
+      }}
       className={`flex flex-col shadow-2xl overflow-hidden ${isActive ? 'shadow-black/30' : 'shadow-black/10'} ${type === 'ipod' ? 'rounded-2xl' : 'rounded-t-lg rounded-b'}`}
       onMouseDown={() => onFocus(id)}
+      onTouchStart={() => onFocus(id)}
     >
-      <div className={`h-7 flex items-center justify-between px-2 select-none border-b border-gray-400 ${type === 'ipod' ? 'rounded-t-2xl' : ''}`} style={{ background: titleBarGradient }} onMouseDown={handleMouseDown}>
+      <div className={`h-7 md:h-7 flex items-center justify-between px-2 select-none border-b border-gray-400 ${type === 'ipod' ? 'rounded-t-2xl' : ''}`} style={{ background: titleBarGradient }} onMouseDown={handleMouseDown} onTouchStart={handleMouseDown}>
         <TrafficLights onClose={() => onClose(id)} />
-        <span className="text-sm font-semibold text-gray-700 shadow-sm">{title}</span>
+        <span className="text-xs md:text-sm font-semibold text-gray-700 shadow-sm truncate flex-1 px-2">{title}</span>
         <div className="w-12"></div>
       </div>
       {type === 'finder' && (
@@ -1815,10 +1846,10 @@ const IPodApp = ({ globalVolume }) => {
   };
 
   return (
-    <div className="h-full w-full flex items-center justify-center font-sans">
+    <div className="h-full w-full flex items-center justify-center font-sans p-2 md:p-0">
       {/* --- The iPod Case --- */}
       <div 
-        className="relative w-[300px] h-[480px] rounded-[30px] shadow-2xl select-none overflow-hidden mx-auto"
+        className="relative w-[280px] h-[448px] md:w-[300px] md:h-[480px] rounded-[30px] shadow-2xl select-none overflow-hidden mx-auto"
         style={{
           background: 'linear-gradient(180deg, #e3e3e3 0%, #d4d4d4 100%)',
           boxShadow: `
@@ -1837,7 +1868,7 @@ const IPodApp = ({ globalVolume }) => {
              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 40%)' }}></div>
         
         {/* --- Screen Area --- */}
-        <div className="relative mx-auto mt-8 w-[250px] h-[190px] bg-black rounded-lg overflow-hidden border-4 border-[#444] shadow-inner">
+        <div className="relative mx-auto mt-6 md:mt-8 w-[230px] h-[175px] md:w-[250px] md:h-[190px] bg-black rounded-lg overflow-hidden border-4 border-[#444] shadow-inner">
           {/* Actual LCD Content */}
           <div className="w-full h-full bg-white relative overflow-visible">
             {/* Top Bar (Global) */}
@@ -1987,9 +2018,9 @@ const IPodApp = ({ globalVolume }) => {
         </div>
 
         {/* --- Click Wheel --- */}
-        <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2">
+        <div className="absolute bottom-10 md:bottom-12 left-1/2 transform -translate-x-1/2">
           <div 
-            className="w-48 h-48 rounded-full relative active:scale-[0.99] transition-transform"
+            className="w-44 h-44 md:w-48 md:h-48 rounded-full relative active:scale-[0.99] transition-transform"
             ref={wheelRef}
             onMouseDown={handleWheelStart}
             onTouchStart={handleWheelStart}
@@ -2091,9 +2122,9 @@ export default function App() {
       <GlobalSVGDefs />
       <MenuBar volume={globalVolume} setVolume={setGlobalVolume} />
 
-      <div className="absolute top-12 right-6 flex flex-col gap-2 items-end z-0">
-        <div onClick={() => toggleWindow('finder-main', 'finder', 'Macintosh HD')}><HardDriveIcon /></div>
-        <div onClick={() => toggleWindow('ipod', 'ipod', 'iPod', 320, 508)}><IpodDesktopIcon /></div>
+      <div className="absolute top-12 md:top-12 right-4 md:right-6 flex flex-col gap-2 items-end z-0">
+        <div onClick={() => toggleWindow('finder-main', 'finder', 'Macintosh HD')} className="cursor-pointer"><HardDriveIcon /></div>
+        <div onClick={() => toggleWindow('ipod', 'ipod', 'iPod', 320, 508)} className="cursor-pointer"><IpodDesktopIcon /></div>
       </div>
 
       <div className="absolute inset-0 top-7 bottom-24 pointer-events-none">
@@ -2110,17 +2141,17 @@ export default function App() {
       </div>
 
       {/* 2D Aqua Dock */}
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center z-[100] overflow-visible pointer-events-none h-24">
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center z-[100] overflow-visible pointer-events-none h-20 md:h-24">
         <div className="pointer-events-auto relative flex items-end justify-center">
-            <div className="relative h-[80px] w-auto min-w-full rounded-t-lg border-t border-white/40 bg-white/30 backdrop-blur-sm shadow-2xl z-0 flex items-center justify-center px-6 py-3 overflow-visible">
+            <div className="relative h-[70px] md:h-[80px] w-auto rounded-t-lg border-t border-white/40 bg-white/30 backdrop-blur-sm shadow-2xl z-0 flex items-center justify-center px-3 md:px-6 py-2 md:py-3 overflow-visible">
                  {/* Pinstripes */}
                  <div className="absolute inset-0 opacity-20 rounded-t-lg" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.8) 1px, rgba(255,255,255,0.8) 2px)' }}></div>
-                 <div className="relative z-20 flex gap-4 items-center">
+                 <div className="relative z-20 flex gap-2 md:gap-4 items-center">
                     <DockItem icon={FinderIcon} label="Finder" onClick={() => toggleWindow('finder-main', 'finder', 'Macintosh HD')} isOpen={windows.find(w => w.id === 'finder-main')?.isOpen || false} />
                     <DockItem icon={AOLIcon} label="ChatGPT" onClick={() => toggleWindow('chat', 'chat', 'ChatGPT', 500, 350)} isOpen={windows.find(w => w.id === 'chat')?.isOpen} />
                     <DockItem icon={IEIcon} label="Internet Explorer" tooltipOverride="Internet Explorer" onClick={() => {}} isOpen={false} />
                     <DockItem icon={AppsIcon} label="Applications" onClick={() => toggleWindow('finder-apps', 'finder', 'Applications')} isOpen={windows.find(w => w.id === 'finder-apps')?.isOpen} />
-                    <div className="w-[1px] h-12 bg-black/10 mx-2 self-center border-r border-white/30"></div> 
+                    <div className="w-[1px] h-10 md:h-12 bg-black/10 mx-1 md:mx-2 self-center border-r border-white/30"></div> 
                     <DockItem icon={TrashIcon} label="Trash" onClick={() => toggleWindow('trash', 'trash', 'Trash')} isOpen={windows.find(w => w.id === 'trash')?.isOpen || false} />
                  </div>
             </div>
