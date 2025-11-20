@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Play, Pause, FastForward, Rewind, Music, ChevronRight } from 'lucide-react';
 
 // --- iPod Assets & Data ---
@@ -28,9 +28,17 @@ export const IPodApp = ({ globalVolume }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentPlayTime, setCurrentPlayTime] = useState(0); // current playback time in seconds
   const [isDraggingProgress, setIsDraggingProgress] = useState(false); // for UI feedback
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
   // Audio ref
   const audioRef = useRef(null);
+  
+  // Track window width for responsive calculations
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Wheel Logic Refs
   const wheelRef = useRef(null);
@@ -374,6 +382,38 @@ export const IPodApp = ({ globalVolume }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  // Calculate button positions based on wheel ring geometry
+  // Wheel outer diameter: 176px (mobile) or 192px (desktop) = 11rem or 12rem
+  // Center button diameter: 64px = 4rem (w-16 h-16)
+  // Ring centerline radius = (outerRadius + innerRadius) / 2
+  const buttonPositions = useMemo(() => {
+    const isMobile = windowWidth <= 768;
+    const wheelSize = isMobile ? 176 : 192; // px
+    const centerButtonSize = 64; // px (w-16 h-16)
+    const wheelRadius = wheelSize / 2; // 88px or 96px
+    const centerButtonRadius = centerButtonSize / 2; // 32px
+    const innerRadius = centerButtonRadius; // 32px
+    const outerRadius = wheelRadius; // 88px or 96px
+    // Ring centerline: middle of the ring (where buttons should be placed)
+    const ringCenterlineRadius = (innerRadius + outerRadius) / 2; // 60px (mobile) or 64px (desktop)
+    
+    // Calculate button positions on ring centerline (90° apart)
+    // 0° = right, 90° = bottom, 180° = left, 270° = top
+    const getButtonPosition = (angleDegrees) => {
+      const angleRad = (angleDegrees * Math.PI) / 180;
+      const x = wheelRadius + ringCenterlineRadius * Math.cos(angleRad);
+      const y = wheelRadius + ringCenterlineRadius * Math.sin(angleRad);
+      return { x: `${x}px`, y: `${y}px` };
+    };
+    
+    return {
+      menu: getButtonPosition(270),    // Top (12 o'clock)
+      next: getButtonPosition(0),       // Right (3 o'clock)
+      play: getButtonPosition(90),      // Bottom (6 o'clock)
+      prev: getButtonPosition(180)      // Left (9 o'clock)
+    };
+  }, [windowWidth]);
+
 
   return (
     <div className="h-full w-full flex items-center justify-center font-sans p-2 md:p-0 overflow-hidden">
@@ -559,36 +599,56 @@ export const IPodApp = ({ globalVolume }) => {
               boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -2px 5px rgba(0,0,0,0.05)'
             }}
           >
-            {/* MENU Button - Top, horizontally centered */}
+            {/* MENU Button - Top (270°) */}
             <button 
-              className="absolute top-1.5 md:top-2 left-1/2 transform -translate-x-1/2 text-[11px] font-bold text-gray-400 tracking-widest hover:text-gray-600 whitespace-nowrap"
+              className="absolute text-[11px] font-bold text-gray-400 tracking-widest hover:text-gray-600 whitespace-nowrap"
+              style={{
+                left: buttonPositions.menu.x,
+                top: buttonPositions.menu.y,
+                transform: 'translate(-50%, -50%)'
+              }}
               onClick={(e) => { e.stopPropagation(); handleMenuClick(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               MENU
             </button>
 
-            {/* Next Button - Right, vertically centered */}
+            {/* Next Button - Right (0°) */}
             <button 
-              className="absolute right-3.5 md:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute text-gray-400 hover:text-gray-600"
+              style={{
+                left: buttonPositions.next.x,
+                top: buttonPositions.next.y,
+                transform: 'translate(-50%, -50%)'
+              }}
               onClick={(e) => { e.stopPropagation(); handleNext(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               <FastForward size={14} fill="currentColor" />
             </button>
 
-            {/* Prev Button - Left, vertically centered */}
+            {/* Prev Button - Left (180°) */}
             <button 
-              className="absolute left-3.5 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute text-gray-400 hover:text-gray-600"
+              style={{
+                left: buttonPositions.prev.x,
+                top: buttonPositions.prev.y,
+                transform: 'translate(-50%, -50%)'
+              }}
               onClick={(e) => { e.stopPropagation(); handlePrev(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
               <Rewind size={14} fill="currentColor" />
             </button>
 
-            {/* Play/Pause Button - Bottom, horizontally centered */}
+            {/* Play/Pause Button - Bottom (90°) */}
             <button 
-              className="absolute bottom-2 md:bottom-3 left-1/2 transform -translate-x-1/2 text-gray-400 hover:text-gray-600 flex gap-[2px] items-center justify-center"
+              className="absolute text-gray-400 hover:text-gray-600 flex gap-[2px] items-center justify-center"
+              style={{
+                left: buttonPositions.play.x,
+                top: buttonPositions.play.y,
+                transform: 'translate(-50%, -50%)'
+              }}
               onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
