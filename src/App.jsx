@@ -1540,6 +1540,7 @@ const IPodApp = ({ globalVolume }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentPlayTime, setCurrentPlayTime] = useState(0); // current playback time in seconds
   const [isDraggingProgress, setIsDraggingProgress] = useState(false); // for UI feedback
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
   
   // Audio ref
   const audioRef = useRef(null);
@@ -1748,6 +1749,13 @@ const IPodApp = ({ globalVolume }) => {
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+  
+  // Track mobile view
+  useEffect(() => {
+    const handleResize = () => setIsMobileView(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Format time for display
@@ -2058,24 +2066,38 @@ const IPodApp = ({ globalVolume }) => {
         </div>
 
         {/* --- Click Wheel --- */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 shrink-0" style={{ bottom: '2.5rem' }}>
+        <div 
+          className="absolute left-1/2 shrink-0"
+          style={{ 
+            bottom: isMobileView ? '2rem' : '3rem',
+            transform: 'translateX(-50%)'
+          }}
+        >
           <div 
-            className="w-44 h-44 md:w-48 md:h-48 rounded-full relative active:scale-[0.99] transition-transform shrink-0"
             ref={wheelRef}
             onMouseDown={(e) => { e.stopPropagation(); handleWheelStart(e); }}
             onTouchStart={(e) => { e.stopPropagation(); handleWheelStart(e); }}
+            className="rounded-full relative shrink-0"
             style={{
+              width: isMobileView ? '176px' : '192px',
+              height: isMobileView ? '176px' : '192px',
+              minWidth: isMobileView ? '176px' : '192px',
+              minHeight: isMobileView ? '176px' : '192px',
               background: '#f2f2f2',
               boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -2px 5px rgba(0,0,0,0.05)',
-              width: '11rem',
-              height: '11rem',
-              minWidth: '11rem',
-              minHeight: '11rem'
+              transition: 'transform 0.2s ease'
             }}
           >
             {/* MENU Button */}
             <button 
-              className="absolute top-2 left-1/2 transform -translate-x-1/2 text-[11px] font-bold text-gray-400 tracking-widest hover:text-gray-600"
+              className="absolute left-1/2 text-gray-400 hover:text-gray-600"
+              style={{
+                top: '0.5rem',
+                transform: 'translateX(-50%)',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                letterSpacing: '0.1em'
+              }}
               onClick={(e) => { e.stopPropagation(); handleMenuClick(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
@@ -2084,7 +2106,11 @@ const IPodApp = ({ globalVolume }) => {
 
             {/* Next Button */}
             <button 
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute top-1/2 text-gray-400 hover:text-gray-600"
+              style={{
+                right: '1rem',
+                transform: 'translateY(-50%)'
+              }}
               onClick={(e) => { e.stopPropagation(); handleNext(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
@@ -2093,7 +2119,11 @@ const IPodApp = ({ globalVolume }) => {
 
             {/* Prev Button */}
             <button 
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute top-1/2 text-gray-400 hover:text-gray-600"
+              style={{
+                left: '1rem',
+                transform: 'translateY(-50%)'
+              }}
               onClick={(e) => { e.stopPropagation(); handlePrev(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
@@ -2102,7 +2132,11 @@ const IPodApp = ({ globalVolume }) => {
 
             {/* Play/Pause Button */}
             <button 
-              className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-gray-400 hover:text-gray-600 flex gap-[2px]"
+              className="absolute left-1/2 text-gray-400 hover:text-gray-600 flex gap-[2px]"
+              style={{
+                bottom: '0.75rem',
+                transform: 'translateX(-50%)'
+              }}
               onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
             >
@@ -2114,8 +2148,12 @@ const IPodApp = ({ globalVolume }) => {
             <button 
               onClick={(e) => { e.stopPropagation(); handleCenterClick(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
-              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-b from-[#e8e8e8] to-[#dcdcdc] active:bg-[#d0d0d0]"
+              className="absolute top-1/2 left-1/2 rounded-full"
               style={{
+                width: '4rem',
+                height: '4rem',
+                transform: 'translate(-50%, -50%)',
+                background: 'linear-gradient(to bottom, #e8e8e8, #dcdcdc)',
                 boxShadow: 'inset 0 1px 2px rgba(255,255,255,1), inset 0 -1px 2px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)'
               }}
             ></button>
