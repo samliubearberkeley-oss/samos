@@ -2104,20 +2104,7 @@ const IPodApp = ({ globalVolume }) => {
               MENU
             </button>
 
-            {/* Next Button */}
-            <button 
-              className="absolute top-1/2 text-gray-400 hover:text-gray-600"
-              style={{
-                right: '1rem',
-                transform: 'translateY(-50%)'
-              }}
-              onClick={(e) => { e.stopPropagation(); handleNext(); }}
-              onTouchEnd={(e) => { e.stopPropagation(); }}
-            >
-              <FastForward size={14} fill="currentColor" />
-            </button>
-
-            {/* Prev Button */}
+            {/* Prev Button (Left) */}
             <button 
               className="absolute top-1/2 text-gray-400 hover:text-gray-600"
               style={{
@@ -2130,12 +2117,28 @@ const IPodApp = ({ globalVolume }) => {
               <Rewind size={14} fill="currentColor" />
             </button>
 
-            {/* Play/Pause Button */}
+            {/* Next Button (Right) */}
             <button 
-              className="absolute left-1/2 text-gray-400 hover:text-gray-600 flex gap-[2px]"
+              className="absolute top-1/2 text-gray-400 hover:text-gray-600"
               style={{
-                bottom: '0.75rem',
-                transform: 'translateX(-50%)'
+                right: '0.75rem',
+                transform: 'translateY(-50%)'
+              }}
+              onClick={(e) => { e.stopPropagation(); handleNext(); }}
+              onTouchEnd={(e) => { e.stopPropagation(); }}
+            >
+              <FastForward size={14} fill="currentColor" />
+            </button>
+
+            {/* Play/Pause Button (Bottom) */}
+            <button 
+              className="absolute left-1/2 text-gray-400 hover:text-gray-600"
+              style={{
+                bottom: '0.5rem',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                gap: '2px',
+                alignItems: 'center'
               }}
               onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
