@@ -499,35 +499,44 @@ const MenuBar = ({ volume, setVolume }) => {
   };
 
   const renderMenu = (items) => (
-    <div className="absolute top-7 left-0 bg-[#f6f6f6] border border-[#b4b4b4] shadow-xl rounded-b-md min-w-[200px] py-1 z-[100]">
-      {items.map((item, idx) => {
-        if (item.label === 'separator') return <div key={idx} className="h-[1px] bg-[#d4d4d4] my-1 mx-1" />;
-        return (
-          <div key={idx} className={`px-4 py-1 text-sm flex items-center justify-between hover:bg-[#3875d7] hover:text-white cursor-pointer group ${item.disabled ? 'text-gray-400 hover:bg-transparent hover:text-gray-400 cursor-default' : 'text-black'}`}>
-            <div className="flex items-center gap-2">
-              {item.icon === 'app' && <div className="w-4 h-4 bg-blue-400 rounded-sm" />}
-              {item.icon === 'doc' && <div className="w-4 h-4 bg-gray-300 rounded-sm" />}
-              {item.icon === 'trash' && <div className="w-4 h-4 bg-gray-400 rounded-full" />}
-              <span>{item.label}</span>
+    <div className="absolute top-7 left-0 bg-[#f0f0f0] border border-[#b4b4b4] shadow-[0_8px_20px_rgba(0,0,0,0.3)] rounded-b-lg min-w-[220px] py-1 z-[99999]">
+      {/* Pinstripe Texture */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.08] z-0" 
+           style={{ backgroundImage: 'repeating-linear-gradient(to bottom, #000, #000 1px, transparent 1px, transparent 3px)' }}>
+      </div>
+      
+      <div className="relative z-10">
+        {items.map((item, idx) => {
+          if (item.label === 'separator') return <div key={idx} className="h-[1px] bg-[#d4d4d4] my-1 mx-3" />;
+          return (
+            <div key={idx} className={`px-5 py-0.5 text-[13px] font-medium flex items-center justify-between hover:bg-[#3875d7] hover:text-white cursor-pointer group ${item.disabled ? 'text-gray-400 hover:bg-transparent hover:text-gray-400 cursor-default' : 'text-black'}`}>
+              <div className="flex items-center gap-3">
+                <div className="w-4 flex justify-center">
+                   {item.icon === 'app' && <div className="w-3.5 h-3.5 bg-[#60a5fa] rounded-[2px] shadow-sm" />}
+                   {item.icon === 'doc' && <div className="w-3.5 h-3.5 bg-[#d1d5db] rounded-[2px] shadow-sm" />}
+                   {item.icon === 'trash' && <div className="w-3.5 h-3.5 bg-[#9ca3af] rounded-full shadow-sm" />}
+                </div>
+                <span className="tracking-wide">{item.label}</span>
+              </div>
+              {item.check && <Check size={12} strokeWidth={4} className="text-black group-hover:text-white ml-2" />}
             </div>
-            {item.check && <Check size={12} className="text-black group-hover:text-white" />}
-          </div>
-        );
-      })}
-       <div className="absolute inset-0 pointer-events-none opacity-10 z-[-1]" style={{ background: 'repeating-linear-gradient(to bottom, transparent, transparent 2px, #000 2px, #000 3px)' }}></div>
+          );
+        })}
+      </div>
     </div>
   );
 
   return (
     <div 
-      className="h-7 md:h-7 border-b border-[#b4b4b4] flex items-center justify-between px-2 md:px-4 fixed top-0 w-full z-50 shadow-sm text-xs md:text-sm select-none font-sans" 
+      className="h-7 md:h-7 border-b border-[#b4b4b4] flex items-center justify-between px-2 md:px-4 fixed top-0 w-full z-[99997] shadow-sm text-xs md:text-sm select-none font-sans" 
       style={{
         background: `repeating-linear-gradient(to right, #f6f6f6, #f6f6f6 2px, #e0e0e0 2px, #e0e0e0 4px)`,
-        backgroundImage: `linear-gradient(to bottom, #f6f6f6, #e0e0e0), repeating-linear-gradient(to right, #f6f6f6, #f6f6f6 2px, #e0e0e0 2px, #e0e0e0 4px)`
+        backgroundImage: `linear-gradient(to bottom, #f6f6f6, #e0e0e0), repeating-linear-gradient(to right, #f6f6f6, #f6f6f6 2px, #e0e0e0 2px, #e0e0e0 4px)`,
+        position: 'fixed'
       }}
       ref={menuRef}
     >
-      <div className="flex items-center gap-1 md:gap-2 overflow-x-auto">
+      <div className="flex items-center gap-1 md:gap-2">
         <div className="flex items-center justify-center -ml-2 md:-ml-4 -mr-1 md:-mr-2 flex-shrink-0" style={{ height: '3.125rem', width: 'auto', aspectRatio: '1' }}>
           <IconImage 
             src="/icons/apple-icon.png" 
@@ -536,8 +545,17 @@ const MenuBar = ({ volume, setVolume }) => {
           />
         </div>
         {['File', 'Edit', 'View', 'Go', 'Help'].map(menu => (
-          <div key={menu} className="relative flex-shrink-0">
-            <span className={`text-gray-800 drop-shadow-sm cursor-pointer px-1 md:px-1 rounded text-xs md:text-sm ${activeMenu === menu ? 'bg-[#3875d7] text-white' : 'hover:bg-blue-400/50'}`} onClick={() => setActiveMenu(activeMenu === menu ? null : menu)}>{menu}</span>
+          <div key={menu} className="relative flex-shrink-0 h-full flex items-center" style={{ zIndex: activeMenu === menu ? 99999 : 'auto' }}>
+            <span 
+              className={`text-gray-800 px-2.5 py-0.5 rounded-md text-[13px] font-medium cursor-default transition-colors duration-100 ${activeMenu === menu ? 'bg-[#3875d7] text-white shadow-sm' : 'hover:bg-black/5'}`}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                setActiveMenu(activeMenu === menu ? null : menu);
+              }}
+              onMouseEnter={() => {
+                 if (activeMenu) setActiveMenu(menu);
+              }}
+            >{menu}</span>
             {activeMenu === menu && renderMenu(MENU_ITEMS[menu.toLowerCase()])}
           </div>
         ))}
@@ -2087,6 +2105,9 @@ export default function App() {
   const [activeWindowId, setActiveWindowId] = useState(null);
   const [maxZ, setMaxZ] = useState(10);
   const [globalVolume, setGlobalVolume] = useState(70); // Global volume state
+  
+  // Ensure window z-index never exceeds dock z-index (dock is 99999)
+  const MAX_WINDOW_Z = 9998;
 
   // Center helper
   const getCenteredPos = (w, h) => ({ x: (window.innerWidth / 2) - (w / 2), y: (window.innerHeight / 2) - (h / 2) });
@@ -2094,15 +2115,16 @@ export default function App() {
   const toggleWindow = (id, type, title, w=400, h=300) => {
     setWindows(prev => {
       const existing = prev.find(win => win.id === id);
+      const newZ = Math.min(maxZ + 1, MAX_WINDOW_Z);
       if (existing) {
-        if (existing.isOpen) { setActiveWindowId(id); return prev.map(win => win.id === id ? {...win, z: maxZ + 1} : win); }
+        if (existing.isOpen) { setActiveWindowId(id); return prev.map(win => win.id === id ? {...win, z: newZ} : win); }
         const center = getCenteredPos(w, h);
-        return prev.map(win => win.id === id ? { ...win, isOpen: true, x: center.x, y: center.y, z: maxZ + 1 } : win);
+        return prev.map(win => win.id === id ? { ...win, isOpen: true, x: center.x, y: center.y, z: newZ } : win);
       }
       const center = getCenteredPos(w, h);
-      return [...prev, { id, title, type, isOpen: true, x: center.x, y: center.y, width: w, height: h, z: maxZ + 1 }];
+      return [...prev, { id, title, type, isOpen: true, x: center.x, y: center.y, width: w, height: h, z: newZ }];
     });
-    setMaxZ(prev => prev + 1);
+    setMaxZ(prev => Math.min(prev + 1, MAX_WINDOW_Z));
     setActiveWindowId(id);
   };
 
@@ -2122,15 +2144,17 @@ export default function App() {
       <GlobalSVGDefs />
       <MenuBar volume={globalVolume} setVolume={setGlobalVolume} />
 
-      <div className="absolute top-12 md:top-12 right-4 md:right-6 flex flex-col gap-2 items-end z-0">
+      {/* Desktop Icons - Higher z-index to ensure they're clickable */}
+      <div className="absolute top-12 md:top-12 right-4 md:right-6 flex flex-col gap-2 items-end z-[100] pointer-events-auto">
         <div onClick={() => toggleWindow('finder-main', 'finder', 'Macintosh HD')} className="cursor-pointer"><HardDriveIcon /></div>
         <div onClick={() => toggleWindow('ipod', 'ipod', 'iPod', 320, 508)} className="cursor-pointer"><IpodDesktopIcon /></div>
       </div>
 
-      <div className="absolute inset-0 top-7 bottom-24 pointer-events-none">
+      {/* Windows Container - Ensure it doesn't overlap dock */}
+      <div className="absolute inset-0 top-7 pb-[70px] md:pb-[80px] pointer-events-none">
         {windows.map(win => win.isOpen && (
           <div key={win.id} className="pointer-events-auto relative w-full h-full">
-            <Window {...win} zIndex={win.z} isActive={activeWindowId === win.id} onFocus={() => {setActiveWindowId(win.id); setMaxZ(maxZ+1)}} onClose={closeWindow}>
+            <Window {...win} zIndex={Math.min(win.z, MAX_WINDOW_Z)} isActive={activeWindowId === win.id} onFocus={() => {setActiveWindowId(win.id); setMaxZ(prev => Math.min(prev + 1, MAX_WINDOW_Z))}} onClose={closeWindow}>
               {win.type === 'finder' && <FinderGrid />}
               {win.type === 'trash' && <TrashGrid />}
               {win.type === 'chat' && <ChatApp />}
@@ -2140,10 +2164,10 @@ export default function App() {
         ))}
       </div>
 
-      {/* 2D Aqua Dock */}
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center z-[100] overflow-visible pointer-events-none h-20 md:h-24">
-        <div className="pointer-events-auto relative flex items-end justify-center">
-            <div className="relative h-[70px] md:h-[80px] w-auto rounded-t-lg border-t border-white/40 bg-white/30 backdrop-blur-sm shadow-2xl z-0 flex items-center justify-center px-3 md:px-6 py-2 md:py-3 overflow-visible">
+      {/* 2D Aqua Dock - Fixed at bottom, always visible, highest z-index */}
+      <div className="fixed bottom-0 left-0 right-0 flex justify-center z-[99999] pointer-events-none" style={{ position: 'fixed', bottom: 0, width: '100%' }}>
+        <div className="pointer-events-auto relative flex items-end justify-center pb-0 w-full max-w-full">
+            <div className="relative h-[70px] md:h-[80px] w-auto min-w-fit max-w-full rounded-t-lg border-t border-white/40 bg-white/30 backdrop-blur-sm shadow-2xl flex items-center justify-center px-3 md:px-6 py-2 md:py-3 overflow-visible">
                  {/* Pinstripes */}
                  <div className="absolute inset-0 opacity-20 rounded-t-lg" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.8) 1px, rgba(255,255,255,0.8) 2px)' }}></div>
                  <div className="relative z-20 flex gap-2 md:gap-4 items-center">
