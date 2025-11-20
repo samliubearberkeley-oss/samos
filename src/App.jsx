@@ -1893,6 +1893,25 @@ const IPodApp = ({ globalVolume }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  // Calculate button positions on the wheel using geometry
+  // Wheel size: 176px (mobile) or 192px (desktop)
+  const wheelSize = isMobileView ? 176 : 192;
+  const wheelRadius = wheelSize / 2;
+  const buttonDistance = wheelRadius * 0.75; // Buttons at 75% of radius from center
+  
+  // Calculate positions (angles in degrees, 0° = right, 90° = bottom, 180° = left, 270° = top)
+  const getButtonPosition = (angleDegrees) => {
+    const angleRad = (angleDegrees * Math.PI) / 180;
+    const x = wheelRadius + buttonDistance * Math.cos(angleRad);
+    const y = wheelRadius + buttonDistance * Math.sin(angleRad);
+    return { x: `${x}px`, y: `${y}px` };
+  };
+  
+  const menuPos = getButtonPosition(270);    // Top (12 o'clock)
+  const nextPos = getButtonPosition(0);       // Right (3 o'clock)
+  const playPos = getButtonPosition(90);      // Bottom (6 o'clock)
+  const prevPos = getButtonPosition(180);     // Left (9 o'clock)
+
   return (
     <div className="h-full w-full flex items-center justify-center font-sans p-2 md:p-0 overflow-hidden">
       {/* --- The iPod Case --- */}
@@ -2088,12 +2107,13 @@ const IPodApp = ({ globalVolume }) => {
               transition: 'transform 0.2s ease'
             }}
           >
-            {/* MENU Button */}
+            {/* MENU Button (Top - 270°) */}
             <button 
-              className="absolute left-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute text-gray-400 hover:text-gray-600"
               style={{
-                top: '0.5rem',
-                transform: 'translateX(-50%)',
+                left: menuPos.x,
+                top: menuPos.y,
+                transform: 'translate(-50%, -50%)',
                 fontSize: '11px',
                 fontWeight: 'bold',
                 letterSpacing: '0.1em'
@@ -2104,12 +2124,13 @@ const IPodApp = ({ globalVolume }) => {
               MENU
             </button>
 
-            {/* Prev Button (Left) */}
+            {/* Prev Button (Left - 180°) */}
             <button 
-              className="absolute top-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute text-gray-400 hover:text-gray-600"
               style={{
-                left: '1rem',
-                transform: 'translateY(-50%)'
+                left: prevPos.x,
+                top: prevPos.y,
+                transform: 'translate(-50%, -50%)'
               }}
               onClick={(e) => { e.stopPropagation(); handlePrev(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
@@ -2117,12 +2138,13 @@ const IPodApp = ({ globalVolume }) => {
               <Rewind size={14} fill="currentColor" />
             </button>
 
-            {/* Next Button (Right) */}
+            {/* Next Button (Right - 0°) */}
             <button 
-              className="absolute top-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute text-gray-400 hover:text-gray-600"
               style={{
-                right: '0.75rem',
-                transform: 'translateY(-50%)'
+                left: nextPos.x,
+                top: nextPos.y,
+                transform: 'translate(-50%, -50%)'
               }}
               onClick={(e) => { e.stopPropagation(); handleNext(); }}
               onTouchEnd={(e) => { e.stopPropagation(); }}
@@ -2130,12 +2152,13 @@ const IPodApp = ({ globalVolume }) => {
               <FastForward size={14} fill="currentColor" />
             </button>
 
-            {/* Play/Pause Button (Bottom) */}
+            {/* Play/Pause Button (Bottom - 90°) */}
             <button 
-              className="absolute left-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute text-gray-400 hover:text-gray-600"
               style={{
-                bottom: '0.5rem',
-                transform: 'translateX(-50%)',
+                left: playPos.x,
+                top: playPos.y,
+                transform: 'translate(-50%, -50%)',
                 display: 'flex',
                 gap: '2px',
                 alignItems: 'center'
